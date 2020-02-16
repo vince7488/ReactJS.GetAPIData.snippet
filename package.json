@@ -1,0 +1,33 @@
+{
+  "name": "01__API.Data",
+  "version": "1.0.0",
+  "description": "*Use an API data and output API data into Bootstrap4 cards.*",
+  "main": "start.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vince7488/ReactJS.GetAPIData.snippet.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/vince7488/ReactJS.GetAPIData.snippet/issues"
+  },
+  "homepage": "https://github.com/vince7488/ReactJS.GetAPIData.snippet#readme",
+  "dependencies": {
+    "express": "^4.17.1",
+    "react": "^16.12.0",
+    "react-dom": "^16.12.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.8.4",
+    "@babel/preset-react": "^7.8.3",
+    "babel-loader": "^8.0.6",
+    "html-webpack-plugin": "^3.2.0",
+    "webpack": "^4.41.6",
+    "webpack-cli": "^3.3.11"
+  }
+}
