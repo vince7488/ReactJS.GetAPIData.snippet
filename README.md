@@ -1,13 +1,17 @@
+![ReactJS Logo. Subjected to Copyright. Facebook Inc. From Wikimedia.org](https://upload.wikimedia.org/wikipedia/commons/a/a7/React-icon.svg)
+
 # ReactJS.GetAPIData.snippet
 *Use an API data and output API data into Bootstrap4 cards.*
 
 version: 0.0.100
 
-Author: Vernard Mercader
+Author: **[Vernard Mercader](http://vernard.net)**
 
-Keyword: React,Express,Node,Webpack,Babel,Axios
+Credits: To our teacher, **[Samer Buna](http://edgecoders.com)**
 
-I'm going to build an environment using NodeJS, Express and Webpack, then React-away from there.
+KeywordS: React,Express,Node,Webpack,Babel,Axios,Bootstrap4
+
+I'm going to build an environment using NodeJS, Express and Webpack, then React-away from there. The goal for this small react Module is to use a simple Method that grabs API AJAX data, and output an API "Document" as a card containing information to a specific unique key.  I'll be using [Bootstrap4](https://getbootstrap.com/docs/4.0/getting-started/introduction/) framework—through react—designing the UI, and the API will be from [GitHub](https://api.github.com).  The module is simple: it consists of a textbox and a submit button that will accept a valid GitHub username (and **displays an error alert** if the user name is invalid), and on user execution, it will display a rectangular card containing the GitHub User's Profile Name, Profile Company, Link to the GitHub Profile, and their Avatar Image.
 
 ## Init:
 
