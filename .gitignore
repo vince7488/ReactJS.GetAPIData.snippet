@@ -140,6 +140,7 @@ build
 *.bak
 /exercise_bin
 package-lock.json
+/.vscode
 
 ###################################
 # official gitignore repo:
