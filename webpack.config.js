@@ -5,6 +5,7 @@ const MiniCssExtractPlugin = require("mini-css-extract-plugin")
 const CleanCSSPlugin = require('less-plugin-clean-css')
 const TerserPlugin = require('terser-webpack-plugin')
 const { CleanWebpackPlugin } = require('clean-webpack-plugin')
+const axios = require("axios").default;
 
 module.exports = {
   watch: true,
