@@ -13,6 +13,7 @@ import {
 } from 'react-bootstrap';
 import Axios from 'axios';
 import "./styles/main.less";
+import Icon from "./favicon.ico";
 
 const CardList = (props) => ( 
   <Row className="justify-content-around align-items-baseline flex-sm-row flex-sm-wrap" role="list">
@@ -36,14 +37,17 @@ class GitHubCard extends React.Component {
     let extURL = (profile.html_url != null) ? profile.html_url : 'https://github.com'; //this is almost never null
 
     return (
-      <div className="col-sm-6 col-md-4 p-1">
+      <div className="col-sm-6 col-md-6 col-lg-4 p-1">
         <Row className="profile-card justify-content-between align-items-center m-3 p-1">
           <figure className="logo col-4">
             <img src={imgURL} alt={profName} />
           </figure>
-          <div className="col-8">
+          <div className="col-8 text-center">
             <h6>{profName}</h6>
-            <span className="comapny-name">{profCpy}</span>
+            <span className="loginid">{profile.login}</span>
+            <div className="text-center">
+              <span className="comapny-name">{profCpy}</span>
+            </div>
             <Button href={extURL} title={profName} target="_blank" variant="link" rel="external" block>Go to Profile</Button>
           </div>
         </Row>

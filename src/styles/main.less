@@ -1,13 +1,32 @@
+@xs: ~"only screen and (min-width:480px)";
+@sm: ~"only screen and (min-width:768px)";
+@md: ~"only screen and (min-width:996px)";
+@lg: ~"only screen and (min-width:1200px)";
+@xl: ~"only screen and (min-width:1600px)";
+
+@strict-xs: ~"(min-width:320px) and (max-width:767px)";
+@strict-sm: ~"(min-width:768px) and (max-width:995px)";
+@strict-md: ~"(min-width:996px) and (max-width:1199px)";
+@strict-lg: ~"(min-width:1200px) and (max-width:1599px)";
+
 #reactMain {
     display: flex;
     position: relative;
     align-items: center;
     justify-content: center;
     width:100%;
-    height: 100vh;
-    overflow-x: hidden;
-    overflow-y: auto;
+    height: auto;
+    min-height: 100vh;
+    overflow: auto;
     background-color: rgb(231, 237, 238);
+
+    @media @md {
+        width:100%;
+        height: 100vh;
+        min-height: unset;
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
 }
 
 .profile-card {
@@ -28,9 +47,18 @@
     h6 {
         font-size: 17px;
         font-weight: 600;
+        margin:0 auto;
+        line-height: 0px;;
+    }
+
+    .loginid {
+        font-size: 10px;
+        font-style: italic;
+        color:rgba(134, 155, 161, 0.829);
     }
 
     .company-name {
+        margin: 0.33em auto;
         font-size: 16px;
     }
 }

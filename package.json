@@ -1,10 +1,11 @@
 {
-  "name": "ReactJS Get API Data snippet",
-  "version": "0.0.100",
+  "name": "ReactJS.GetAPIData.snippet",
+  "version": "0.0.134",
   "description": "*Use an API data and output API data into Bootstrap4 cards.*",
   "main": "start.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "webpack"
   },
   "repository": {
     "type": "git",
