@@ -9,7 +9,9 @@ Author: **[Vernard Mercader](http://vernard.net)**
 
 Credit: **[Samer Buna](http://edgecoders.com)**
 
-KeywordS: React,Express,Node,Webpack,Babel,Axios,Bootstrap4
+Live: http://vmdataserv.com/react-apidata/
+
+Keywords: React,Express,Node,Webpack,Babel,Axios,Bootstrap4
 
 I'm going to build an environment using NodeJS, Express and Webpack, then React-away from there. The goal for this small react Module is to use a simple Method that grabs API AJAX data and output an API "Document" as a card containing information to a specific unique key.  I'll be using [Bootstrap4](https://getbootstrap.com/docs/4.0/getting-started/introduction/) framework—through react—designing the UI, and the API will be from [GitHub](https://api.github.com).  The module is simple: it consists of a textbox and a submit button that will accept a valid GitHub username (and **displays an error alert** If the user name is invalid), and on user execution, it will display a rectangular card containing the GitHub User's Profile Name, Profile Company, Link to the GitHub Profile, and their Avatar Image.
 
