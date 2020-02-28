@@ -158,7 +158,7 @@ class AppObject extends React.Component {
 function AppContainer() {
   
   return (
-    < AppObject />
+    <AppObject />
   );
 
 }

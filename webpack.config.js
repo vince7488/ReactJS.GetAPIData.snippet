@@ -32,7 +32,6 @@ module.exports = {
           {
             loader: "style-loader"
           },
-          MiniCssExtractPlugin.loader,
           {
             loader: "css-loader"
           },
