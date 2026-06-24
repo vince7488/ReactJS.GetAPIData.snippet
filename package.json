@@ -1,53 +1,50 @@
 {
-  "name": "ReactJS.GetAPIData.snippet",
+  "name": "react-github-profile-search",
   "version": "0.0.134",
-  "description": "*Use an API data and output API data into Bootstrap4 cards.*",
-  "main": "start.js",
+  "private": true,
+  "description": "Search for GitHub users and display their profiles in responsive cards.",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "webpack"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/vince7488/ReactJS.GetAPIData.snippet.git"
   },
-  "keywords": [],
-  "author": "",
+  "author": "Vernard Mercader",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/vince7488/ReactJS.GetAPIData.snippet/issues"
   },
   "homepage": "https://github.com/vince7488/ReactJS.GetAPIData.snippet#readme",
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "dependencies": {
-    "babel": "^6.23.0",
-    "bootstrap": "^4.4.1",
-    "express": "^4.17.1",
-    "less": "^3.11.1",
-    "react": "^16.13.0",
-    "react-dom": "^16.13.0"
+    "bootstrap": "^5.3.8",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
   },
   "devDependencies": {
-    "@babel/core": "^7.8.6",
-    "@babel/plugin-proposal-class-properties": "^7.8.3",
-    "@babel/preset-react": "^7.8.3",
-    "autoprefixer": "^9.7.4",
-    "axios": "^0.19.2",
-    "babel-loader": "^8.0.6",
-    "clean-webpack-plugin": "^3.0.0",
-    "css-loader": "^3.4.2",
-    "cssnano": "^4.1.10",
-    "file-loader": "^5.1.0",
-    "html-webpack-plugin": "^3.2.0",
-    "jquery": "^3.4.1",
-    "less-loader": "^5.0.0",
-    "less-plugin-clean-css": "^1.5.1",
-    "mini-css-extract-plugin": "^0.9.0",
-    "popper.js": "^1.16.1",
-    "postcss-loader": "^3.0.0",
-    "react-bootstrap": "^1.0.0-beta.16",
-    "style-loader": "^1.1.3",
-    "terser-webpack-plugin": "^2.3.5",
-    "webpack": "^4.41.6",
-    "webpack-cli": "^3.3.11"
+    "@eslint/js": "^10.0.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@vitejs/plugin-react": "^6.0.3",
+    "eslint": "^10.5.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.3",
+    "globals": "^17.7.0",
+    "jsdom": "^29.1.1",
+    "prettier": "^3.8.4",
+    "vite": "^8.1.0",
+    "vitest": "^4.1.9"
   }
 }
