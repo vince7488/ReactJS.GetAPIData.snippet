@@ -1,19 +1,18 @@
-# React GitHub Profile Search
+# API Search Playground
 
-A small React application that searches GitHub by username and displays each
-result as a responsive profile card.
+A provider-driven React application for searching GitHub, Open Library, and PokéAPI through one shared interface.
 
-The project was originally built with React 16, Webpack 4, Express, Axios,
-React Bootstrap, and LESS. It now uses current React, Vite, Bootstrap, the
-browser Fetch API, ESLint, Prettier, and Vitest.
+The project was originally built with React 16, Webpack 4, Express, Axios, React Bootstrap, and LESS. It now uses current React, Vite,
+Bootstrap, the browser Fetch API, ESLint, Prettier, and Vitest. Provider adapters isolate API request and response details from the
+presentation components.
 
 ## Features
 
-- Search GitHub's public users API by username.
-- Display the user's name, login, company, avatar, and profile link.
-- Show readable fallback values when optional profile fields are missing.
-- Report unsuccessful searches without removing existing results.
-- Keep multiple search results visible in a responsive Bootstrap grid.
+- Select GitHub, Open Library, or PokéAPI from an accessible provider control.
+- Change form labels, examples, validation, and links for the selected API.
+- Normalize every API response into one shared result-card model.
+- Keep request construction, response adaptation, validation, and error mapping inside each provider adapter.
+- Display single-item and multi-item responses in a responsive Bootstrap grid.
 
 ## Requirements
 
@@ -47,19 +46,41 @@ Vite prints the local development URL when the server starts.
 ```text
 src/
   components/   React UI components
-  services/     GitHub API access
+  providers/    Provider adapters, contract, and registry
+  services/     Provider-independent request orchestration
   styles/       Application CSS
   test/         Shared test setup
-  utils/        Profile display helpers
   App.jsx       Application state and composition
   main.jsx      React entry point
 ```
 
+## Provider Contract
+
+Each provider adapter supplies:
+
+- Provider name, description, labels, placeholder, example, and link copy
+- `validateQuery(query)`
+- `buildRequest(validatedQuery)`
+- `adaptResponse(payload)`
+- `mapError(error)`
+
+Adapters return an array of normalized results with:
+
+```text
+id, title, subtitle, description, imageUrl, externalUrl, metadata
+```
+
+Adding another provider requires registering one adapter in `src/providers/registry.js`; presentation components do not need
+provider-specific branches.
+
 ## API Notes
 
-The app calls `https://api.github.com/users/{username}` directly from the
-browser. GitHub applies a low hourly rate limit to unauthenticated requests, so
-heavy use can temporarily produce the same error shown for a missing username.
+The app calls each public API directly from the browser without credentials. Provider availability and unauthenticated rate limits
+still apply:
+
+- GitHub performs an exact username lookup.
+- Open Library searches books and returns up to six matches.
+- PokéAPI performs an exact Pokémon name or National Pokédex number lookup.
 
 ## Credits
 

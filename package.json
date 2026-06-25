@@ -1,8 +1,8 @@
 {
-  "name": "react-github-profile-search",
+  "name": "api-search-playground",
   "version": "0.0.134",
   "private": true,
-  "description": "Search for GitHub users and display their profiles in responsive cards.",
+  "description": "A provider-driven React playground for GitHub, Open Library, and PokéAPI searches.",
   "type": "module",
   "scripts": {
     "dev": "vite",
