@@ -4,7 +4,8 @@ A provider-driven React application for searching GitHub, Open Library, and Pok√
 
 The project was originally built with React 16, Webpack 4, Express, Axios, React Bootstrap, and LESS. It now uses current React, Vite,
 Bootstrap, the browser Fetch API, ESLint, Prettier, and Vitest. Provider adapters isolate API request and response details from the
-presentation components.
+presentation components. Intentionally kept in React JSX (and not TypeScript) to showcase ability to be versatile with JSX (I do love
+TypeScript better, though.)
 
 ## Features
 

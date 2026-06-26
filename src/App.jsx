@@ -4,9 +4,11 @@ import ResultList from './components/ResultList'
 import SearchForm from './components/SearchForm'
 import { DEFAULT_PROVIDER_ID, getProvider, getProviders } from './providers/registry'
 import { searchProvider } from './services/searchService'
+import { createSearchPolicy, loadSearchPolicy, saveSearchPolicy } from './utils/searchPolicy'
 
 function App() {
   const [selectedProviderId, setSelectedProviderId] = useState(DEFAULT_PROVIDER_ID)
+  const [searchPolicy, setSearchPolicy] = useState(loadSearchPolicy)
   const [results, setResults] = useState([])
   const providers = getProviders()
   const selectedProvider = getProvider(selectedProviderId)
@@ -17,8 +19,16 @@ function App() {
   }
 
   async function handleSearch(query) {
-    const nextResults = await searchProvider(selectedProviderId, query)
+    const nextResults = await searchProvider(selectedProviderId, query, searchPolicy)
     setResults(nextResults)
+  }
+
+  function changeFuzziness(fuzziness) {
+    setSearchPolicy((currentPolicy) => {
+      const nextPolicy = createSearchPolicy({ ...currentPolicy, fuzziness })
+      saveSearchPolicy(nextPolicy)
+      return nextPolicy
+    })
   }
 
   return (
@@ -37,7 +47,13 @@ function App() {
 
         <div className='search-panel'>
           <ProviderSelector providers={providers} selectedProviderId={selectedProviderId} onChange={changeProvider} />
-          <SearchForm key={selectedProvider.id} provider={selectedProvider} onSearch={handleSearch} />
+          <SearchForm
+            key={selectedProvider.id}
+            provider={selectedProvider}
+            searchPolicy={searchPolicy}
+            onFuzzinessChange={changeFuzziness}
+            onSearch={handleSearch}
+          />
         </div>
 
         <ResultList

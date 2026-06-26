@@ -1,6 +1,7 @@
 import { useState } from 'react'
+import SearchPolicyControl from './SearchPolicyControl'
 
-function SearchForm({ provider, onSearch }) {
+function SearchForm({ provider, searchPolicy, onFuzzinessChange, onSearch }) {
   const [query, setQuery] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -60,6 +61,8 @@ function SearchForm({ provider, onSearch }) {
       <p id='search-example' className='form-text mb-0'>
         Example: {provider.example}
       </p>
+
+      <SearchPolicyControl fuzziness={searchPolicy.fuzziness} onChange={onFuzzinessChange} />
     </form>
   )
 }

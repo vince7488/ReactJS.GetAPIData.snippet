@@ -78,6 +78,37 @@ select {
   min-width: 0;
 }
 
+.search-policy-control {
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid rgb(33 37 41 / 12%);
+}
+
+.search-policy-control__heading,
+.search-policy-control__labels {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.search-policy-control__value {
+  color: #53636a;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.search-policy-control .form-range {
+  margin: 0.4rem 0 0.15rem;
+}
+
+.search-policy-control__labels {
+  color: #69777d;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
 .results-summary {
   margin: 0 0 0.25rem 0.5rem;
   color: #53636a;

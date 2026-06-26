@@ -28,13 +28,14 @@ const requiredTextFields = [
   'resultsLabel',
 ]
 
-const requiredMethods = ['validateQuery', 'buildRequest', 'adaptResponse', 'mapError']
+const requiredMethods = ['validateQuery', 'buildRequest', 'adaptResponse', 'getCandidateFields', 'mapError']
 
 /**
  * Runtime-checks the JavaScript provider adapter interface.
  *
  * Every adapter owns its UI copy, query validation, request construction,
- * response normalization, and user-facing error mapping.
+ * provider-specific policy translation, response normalization, candidate
+ * fields used by shared ranking, and user-facing error mapping.
  */
 export function defineProvider(provider) {
   for (const field of requiredTextFields) {

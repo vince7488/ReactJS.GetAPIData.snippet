@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { adaptGitHubResponse, buildGitHubRequest, validateGitHubQuery } from './githubProvider'
+import { adaptGitHubResponse, buildGitHubRequest, mapGitHubSearchPolicy, validateGitHubQuery } from './githubProvider'
 
 describe('GitHub provider', () => {
   it('validates and constructs an exact-user request', () => {
@@ -14,6 +14,16 @@ describe('GitHub provider', () => {
         },
       },
     })
+  })
+
+  it('maps fuzzy intent to GitHub user search instead of exact lookup', () => {
+    const request = buildGitHubRequest('octocat', { fuzziness: 50, limit: 12, rankingThreshold: 0.8 })
+    const url = new URL(request.url)
+
+    expect(mapGitHubSearchPolicy({ fuzziness: 0 })).toEqual({ strategy: 'exact', requestLimit: 1 })
+    expect(`${url.origin}${url.pathname}`).toBe('https://api.github.com/search/users')
+    expect(url.searchParams.get('q')).toBe('octocat in:login')
+    expect(url.searchParams.get('per_page')).toBe('24')
   })
 
   it('normalizes a GitHub user into the shared display model', () => {
@@ -44,5 +54,23 @@ describe('GitHub provider', () => {
         { label: 'Followers', value: '20' },
       ],
     })
+  })
+
+  it('does not invent profile counts for fuzzy search candidates', () => {
+    const [result] = adaptGitHubResponse({
+      items: [
+        {
+          id: 2,
+          login: 'octodemo',
+          score: 42,
+          avatar_url: 'https://example.com/octodemo.png',
+          html_url: 'https://github.com/octodemo',
+        },
+      ],
+    })
+
+    expect(result.description).toContain('search candidate')
+    expect(result.metadata).toContainEqual({ label: 'Repositories', value: 'Not loaded' })
+    expect(result.metadata).toContainEqual({ label: 'Followers', value: 'Not loaded' })
   })
 })

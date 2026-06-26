@@ -1,6 +1,8 @@
 import { defineProvider, PROVIDER_ERROR_CODES, ProviderError } from './providerContract'
+import { createSearchPolicy } from '../utils/searchPolicy'
 
 const POKE_API = 'https://pokeapi.co/api/v2/pokemon'
+const POKE_API_CATALOG_LIMIT = 100000
 const POKEMON_QUERY_PATTERN = /^[a-z\d]+(?:[ -][a-z\d]+)*$/i
 
 function toDisplayName(value) {
@@ -30,9 +32,23 @@ export function validatePokeApiQuery(query) {
   return normalizedQuery
 }
 
-export function buildPokeApiRequest(searchTerm) {
+export function mapPokeApiSearchPolicy(searchPolicy) {
+  const policy = createSearchPolicy(searchPolicy)
+
   return {
-    url: `${POKE_API}/${encodeURIComponent(searchTerm)}`,
+    strategy: policy.fuzziness === 0 ? 'exact' : 'catalog',
+  }
+}
+
+export function buildPokeApiRequest(searchTerm, searchPolicy) {
+  const providerPolicy = mapPokeApiSearchPolicy(searchPolicy)
+  const url =
+    providerPolicy.strategy === 'exact'
+      ? `${POKE_API}/${encodeURIComponent(searchTerm)}`
+      : `${POKE_API}?limit=${POKE_API_CATALOG_LIMIT}&offset=0`
+
+  return {
+    url,
     options: {
       headers: {
         Accept: 'application/json',
@@ -41,38 +57,71 @@ export function buildPokeApiRequest(searchTerm) {
   }
 }
 
-export function adaptPokeApiResponse(pokemon) {
+function adaptPokeApiPokemon(pokemon) {
   const name = pokemon.name || 'unknown-pokemon'
   const displayName = toDisplayName(name)
   const types = Array.isArray(pokemon.types) ? pokemon.types.map(({ type }) => toDisplayName(type.name)) : []
   const abilities = Array.isArray(pokemon.abilities) ? pokemon.abilities.map(({ ability }) => toDisplayName(ability.name)) : []
   const typeDescription = types.length > 0 ? types.join(' / ') : 'Unknown type'
 
-  return [
-    {
-      id: `pokeapi:${pokemon.id ?? name}`,
-      title: displayName,
-      subtitle: pokemon.id ? `National Pokédex #${String(pokemon.id).padStart(4, '0')}` : 'Pokédex number unavailable',
-      description: `${displayName} has ${typeDescription} typing and ${pokemon.base_experience ?? 'unknown'} base experience.`,
-      imageUrl: pokemon.sprites?.other?.['official-artwork']?.front_default || pokemon.sprites?.front_default || null,
-      externalUrl: pokemon.id ? `${POKE_API}/${pokemon.id}/` : `${POKE_API}/${encodeURIComponent(name)}/`,
-      metadata: [
-        { label: 'Types', value: typeDescription },
-        {
-          label: 'Height',
-          value: typeof pokemon.height === 'number' ? `${pokemon.height / 10} m` : 'Not listed',
-        },
-        {
-          label: 'Weight',
-          value: typeof pokemon.weight === 'number' ? `${pokemon.weight / 10} kg` : 'Not listed',
-        },
-        {
-          label: 'Abilities',
-          value: abilities.length > 0 ? abilities.join(', ') : 'Not listed',
-        },
-      ],
-    },
-  ]
+  return {
+    id: `pokeapi:${pokemon.id ?? name}`,
+    title: displayName,
+    subtitle: pokemon.id ? `National Pokédex #${String(pokemon.id).padStart(4, '0')}` : 'Pokédex number unavailable',
+    description: `${displayName} has ${typeDescription} typing and ${pokemon.base_experience ?? 'unknown'} base experience.`,
+    imageUrl: pokemon.sprites?.other?.['official-artwork']?.front_default || pokemon.sprites?.front_default || null,
+    externalUrl: pokemon.id ? `${POKE_API}/${pokemon.id}/` : `${POKE_API}/${encodeURIComponent(name)}/`,
+    metadata: [
+      { label: 'Types', value: typeDescription },
+      {
+        label: 'Height',
+        value: typeof pokemon.height === 'number' ? `${pokemon.height / 10} m` : 'Not listed',
+      },
+      {
+        label: 'Weight',
+        value: typeof pokemon.weight === 'number' ? `${pokemon.weight / 10} kg` : 'Not listed',
+      },
+      {
+        label: 'Abilities',
+        value: abilities.length > 0 ? abilities.join(', ') : 'Not listed',
+      },
+    ],
+  }
+}
+
+function getPokemonIdFromUrl(url) {
+  return String(url ?? '').match(/\/pokemon\/(\d+)\/?$/)?.[1] ?? null
+}
+
+function adaptPokeApiCatalogEntry(pokemon) {
+  const id = getPokemonIdFromUrl(pokemon.url)
+  const name = pokemon.name || 'unknown-pokemon'
+  const displayName = toDisplayName(name)
+
+  return {
+    id: `pokeapi:${id ?? name}`,
+    title: displayName,
+    subtitle: id ? `National Pokédex #${String(id).padStart(4, '0')}` : 'Pokédex number unavailable',
+    description: `${displayName} matched the PokéAPI name catalog. Open the resource for complete details.`,
+    imageUrl: id ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png` : null,
+    externalUrl: pokemon.url || `${POKE_API}/${encodeURIComponent(name)}/`,
+    metadata: [
+      { label: 'Match source', value: 'Pokémon name catalog' },
+      { label: 'Details', value: 'Available from PokéAPI' },
+    ],
+  }
+}
+
+export function adaptPokeApiResponse(payload) {
+  if (Array.isArray(payload?.results)) {
+    return payload.results.map(adaptPokeApiCatalogEntry)
+  }
+
+  return [adaptPokeApiPokemon(payload)]
+}
+
+export function getPokeApiCandidateFields(result) {
+  return [result.title, result.subtitle, result.id.replace(/^pokeapi:/, '')]
 }
 
 export function mapPokeApiError(error) {
@@ -98,7 +147,7 @@ export function mapPokeApiError(error) {
 export const pokeApiProvider = defineProvider({
   id: 'pokeapi',
   name: 'PokéAPI',
-  description: 'Find one Pokémon by its name or National Pokédex number.',
+  description: 'Find Pokémon by name or National Pokédex number with exact or fuzzy matching.',
   inputLabel: 'Pokémon name or Pokédex number',
   placeholder: 'pikachu or 25',
   example: 'pikachu',
@@ -108,5 +157,6 @@ export const pokeApiProvider = defineProvider({
   validateQuery: validatePokeApiQuery,
   buildRequest: buildPokeApiRequest,
   adaptResponse: adaptPokeApiResponse,
+  getCandidateFields: getPokeApiCandidateFields,
   mapError: mapPokeApiError,
 })

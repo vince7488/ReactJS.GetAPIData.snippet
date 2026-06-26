@@ -1,4 +1,5 @@
 import { defineProvider, PROVIDER_ERROR_CODES, ProviderError } from './providerContract'
+import { createSearchPolicy } from '../utils/searchPolicy'
 
 const OPEN_LIBRARY_SEARCH_API = 'https://openlibrary.org/search.json'
 const OPEN_LIBRARY_FIELDS = ['key', 'title', 'author_name', 'first_publish_year', 'cover_i', 'edition_count', 'language'].join(',')
@@ -17,12 +18,22 @@ export function validateOpenLibraryQuery(query) {
   return searchTerm
 }
 
-export function buildOpenLibraryRequest(searchTerm) {
+export function mapOpenLibrarySearchPolicy(searchPolicy) {
+  const policy = createSearchPolicy(searchPolicy)
+
+  return {
+    strategy: 'full-text',
+    requestLimit: Math.min(100, Math.ceil(policy.limit * (1 + (2 * policy.fuzziness) / 100))),
+  }
+}
+
+export function buildOpenLibraryRequest(searchTerm, searchPolicy) {
+  const providerPolicy = mapOpenLibrarySearchPolicy(searchPolicy)
   const url = new URL(OPEN_LIBRARY_SEARCH_API)
   url.search = new URLSearchParams({
     q: searchTerm,
     fields: OPEN_LIBRARY_FIELDS,
-    limit: '6',
+    limit: String(providerPolicy.requestLimit),
   })
 
   return {
@@ -85,6 +96,10 @@ export function adaptOpenLibraryResponse(payload) {
   })
 }
 
+export function getOpenLibraryCandidateFields(result) {
+  return [result.title, result.subtitle]
+}
+
 export function mapOpenLibraryError(error) {
   if (error.code === PROVIDER_ERROR_CODES.validation) {
     return error.message
@@ -118,5 +133,6 @@ export const openLibraryProvider = defineProvider({
   validateQuery: validateOpenLibraryQuery,
   buildRequest: buildOpenLibraryRequest,
   adaptResponse: adaptOpenLibraryResponse,
+  getCandidateFields: getOpenLibraryCandidateFields,
   mapError: mapOpenLibraryError,
 })
