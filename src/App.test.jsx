@@ -51,6 +51,23 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'Search Open Library' })).toBeVisible()
   })
 
+  it('clears the current query and rendered results', async () => {
+    const user = userEvent.setup()
+    searchProvider.mockResolvedValue([result])
+    render(<App />)
+
+    const queryInput = screen.getByLabelText(/github username/i)
+    await user.type(queryInput, 'octocat')
+    await user.click(screen.getByRole('button', { name: 'Find GitHub user' }))
+
+    expect(await screen.findByText('The Octocat')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Clear' }))
+
+    expect(queryInput).toHaveValue('')
+    expect(screen.queryByText('The Octocat')).not.toBeInTheDocument()
+  })
+
   it('shows the provider-mapped error message', async () => {
     const user = userEvent.setup()
     searchProvider.mockRejectedValue(new Error("That GitHub username couldn't be found."))

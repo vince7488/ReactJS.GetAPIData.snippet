@@ -23,6 +23,10 @@ function App() {
     setResults(nextResults)
   }
 
+  function clearSearch() {
+    setResults([])
+  }
+
   function changeFuzziness(fuzziness) {
     setSearchPolicy((currentPolicy) => {
       const nextPolicy = createSearchPolicy({ ...currentPolicy, fuzziness })
@@ -52,6 +56,7 @@ function App() {
             provider={selectedProvider}
             searchPolicy={searchPolicy}
             onFuzzinessChange={changeFuzziness}
+            onClear={clearSearch}
             onSearch={handleSearch}
           />
         </div>

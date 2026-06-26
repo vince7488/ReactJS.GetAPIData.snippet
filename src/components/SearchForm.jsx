@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import SearchPolicyControl from './SearchPolicyControl'
 
-function SearchForm({ provider, searchPolicy, onFuzzinessChange, onSearch }) {
+function SearchForm({ provider, searchPolicy, onClear, onFuzzinessChange, onSearch }) {
   const [query, setQuery] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -23,6 +23,12 @@ function SearchForm({ provider, searchPolicy, onFuzzinessChange, onSearch }) {
   function handleQueryChange(event) {
     setQuery(event.target.value)
     setError('')
+  }
+
+  function handleClear() {
+    setQuery('')
+    setError('')
+    onClear()
   }
 
   return (
@@ -52,8 +58,11 @@ function SearchForm({ provider, searchPolicy, onFuzzinessChange, onSearch }) {
             aria-describedby='search-example'
             required
           />
-          <button className='btn btn-primary' type='submit' disabled={isLoading}>
+          <button className='btn btn-primary search-form__submit-button' type='submit' disabled={isLoading}>
             {isLoading ? 'Searching...' : provider.submitLabel}
+          </button>
+          <button className='btn search-form__clear-button' type='button' onClick={handleClear}>
+            Clear
           </button>
         </div>
       </div>

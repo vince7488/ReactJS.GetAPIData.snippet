@@ -84,6 +84,26 @@ select {
   border-top: 1px solid rgb(33 37 41 / 12%);
 }
 
+.search-form .input-group > .search-form__submit-button {
+  border-top-right-radius: 0.375rem;
+  border-bottom-right-radius: 0.375rem;
+}
+
+.search-form .input-group > .search-form__clear-button {
+  margin-left: 8px;
+  border: 1px solid #212529;
+  border-radius: 0.375rem;
+  background: #fff;
+  color: #212529;
+}
+
+.search-form .input-group > .search-form__clear-button:hover,
+.search-form .input-group > .search-form__clear-button:focus {
+  border-color: #000;
+  background: #f8f9fa;
+  color: #000;
+}
+
 .search-policy-control__heading,
 .search-policy-control__labels {
   display: flex;
@@ -221,6 +241,10 @@ select {
     grid-column: 1 / -1;
     margin-top: 0.5rem;
     border-radius: 0.375rem;
+  }
+
+  .search-form .input-group > .search-form__clear-button {
+    margin-left: 0;
   }
 }
 
