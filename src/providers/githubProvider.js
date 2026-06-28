@@ -1,5 +1,5 @@
-import { defineProvider, PROVIDER_ERROR_CODES, ProviderError } from './providerContract'
-import { createSearchPolicy } from '../utils/searchPolicy'
+import {defineProvider, PROVIDER_ERROR_CODES, ProviderError} from './providerContract'
+import {createSearchPolicy} from '../utils/searchPolicy'
 
 const GITHUB_USERS_API = 'https://api.github.com/users'
 const GITHUB_USER_SEARCH_API = 'https://api.github.com/search/users'
@@ -77,8 +77,8 @@ function adaptGitHubUser(profile) {
     imageUrl: profile.avatar_url || `https://github.com/identicons/${encodeURIComponent(login)}.png`,
     externalUrl: profile.html_url || `https://github.com/${login}`,
     metadata: [
-      { label: 'Company', value: profile.company || (isSearchCandidate ? 'Not loaded' : 'Not listed') },
-      { label: 'Location', value: profile.location || (isSearchCandidate ? 'Not loaded' : 'Not listed') },
+      {label: 'Company', value: profile.company || (isSearchCandidate ? 'Not loaded' : 'Not listed')},
+      {label: 'Location', value: profile.location || (isSearchCandidate ? 'Not loaded' : 'Not listed')},
       {
         label: 'Repositories',
         value: profile.public_repos === undefined && isSearchCandidate ? 'Not loaded' : String(profile.public_repos ?? 0),
@@ -128,8 +128,8 @@ export const githubProvider = defineProvider({
   name: 'GitHub',
   description: 'Find public GitHub users by username with exact or broader matching.',
   inputLabel: 'GitHub username',
-  placeholder: 'octocat',
-  example: 'octocat',
+  placeholder: 'vince7488',
+  example: 'vince7488',
   submitLabel: 'Find GitHub user',
   externalLinkLabel: 'View GitHub profile',
   resultsLabel: 'GitHub user results',

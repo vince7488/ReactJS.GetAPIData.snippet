@@ -11,11 +11,11 @@ vi.mock('./services/searchService', () => ({
 
 const result = {
   id: 'github:1',
-  title: 'The Octocat',
-  subtitle: '@octocat',
+  title: 'The vince7488',
+  subtitle: '@vince7488',
   description: 'A GitHub mascot.',
-  imageUrl: 'https://example.com/octocat.png',
-  externalUrl: 'https://github.com/octocat',
+  imageUrl: 'https://example.com/vince7488.png',
+  externalUrl: 'https://github.com/vince7488',
   metadata: [{ label: 'Followers', value: '20' }],
 }
 
@@ -30,12 +30,12 @@ describe('App', () => {
     searchProvider.mockResolvedValue([result])
     render(<App />)
 
-    await user.type(screen.getByLabelText(/github username/i), 'octocat')
+    await user.type(screen.getByLabelText(/github username/i), 'vince7488')
     await user.click(screen.getByRole('button', { name: 'Find GitHub user' }))
 
-    expect(searchProvider).toHaveBeenCalledWith('github', 'octocat', DEFAULT_SEARCH_POLICY)
-    expect(await screen.findByText('The Octocat')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'View GitHub profile' })).toHaveAttribute('href', 'https://github.com/octocat')
+    expect(searchProvider).toHaveBeenCalledWith('github', 'vince7488', DEFAULT_SEARCH_POLICY)
+    expect(await screen.findByText('The vince7488')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'View GitHub profile' })).toHaveAttribute('href', 'https://github.com/vince7488')
     expect(screen.getByText('Followers')).toBeInTheDocument()
   })
 
@@ -57,15 +57,15 @@ describe('App', () => {
     render(<App />)
 
     const queryInput = screen.getByLabelText(/github username/i)
-    await user.type(queryInput, 'octocat')
+    await user.type(queryInput, 'vince7488')
     await user.click(screen.getByRole('button', { name: 'Find GitHub user' }))
 
-    expect(await screen.findByText('The Octocat')).toBeInTheDocument()
+    expect(await screen.findByText('The vince7488')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Clear' }))
 
     expect(queryInput).toHaveValue('')
-    expect(screen.queryByText('The Octocat')).not.toBeInTheDocument()
+    expect(screen.queryByText('The vince7488')).not.toBeInTheDocument()
   })
 
   it('shows the provider-mapped error message', async () => {
@@ -98,10 +98,10 @@ describe('App', () => {
       rankingThreshold: 0.8,
     })
 
-    await user.type(screen.getByLabelText(/github username/i), 'octocat')
+    await user.type(screen.getByLabelText(/github username/i), 'vince7488')
     await user.click(screen.getByRole('button', { name: 'Find GitHub user' }))
 
-    expect(searchProvider).toHaveBeenCalledWith('github', 'octocat', {
+    expect(searchProvider).toHaveBeenCalledWith('github', 'vince7488', {
       fuzziness: 65,
       limit: 12,
       rankingThreshold: 0.8,
