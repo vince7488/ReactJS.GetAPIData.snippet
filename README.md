@@ -17,7 +17,8 @@ though.)_
 - You can clear the current query and rendered results from the search form.
 - Normalize every API response into one shared result-card model.
 - Keeps request construction, response adaptation, validation, ranking, hydration, and error mapping inside each provider adapter.
-- Display small result sets in a responsive Bootstrap grid and larger result sets with `react-window` virtualization.
+- Display results as `masonic`-backed virtualized masonry cards with page-scroll progressive reveal instead of a fixed-height result
+  scroller.
 
 ## Requirements
 
@@ -91,6 +92,9 @@ results. Makes me think fuzzy is overrated. Each provider maps the five levels t
 - Level 2: median
 - Level 3: semi-lenient
 - Level 4: lenient
+
+Result display caps are provider-specific: GitHub searches up to 12 results and reveals 6 cards first, then 3 more at a time. Open
+Library and PokéAPI search up to 52 results and reveal 9 cards first, then 6 more at a time.
 
 ## API Notes
 

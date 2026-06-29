@@ -1,7 +1,7 @@
-function ResultCard({ result, externalLinkLabel, className = 'col-12 col-md-6 col-xl-4 p-2' }) {
+function ResultCard({ result, externalLinkLabel, className = 'result-card-wrapper' }) {
   return (
     <article className={className}>
-      <div className='result-card h-100'>
+      <div className='result-card'>
         <div className='result-card__media'>
           {result.imageUrl ? (
             <img className='result-card__image' src={result.imageUrl} alt='' />

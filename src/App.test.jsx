@@ -9,6 +9,31 @@ vi.mock('./services/searchService', () => ({
   searchProvider: vi.fn(),
 }))
 
+vi.mock('./components/MasonryGrid', () => ({
+  default({ results, externalLinkLabel }) {
+    return (
+      <div className='masonry-grid' role='list'>
+        {results.map((result) => (
+          <article key={result.id}>
+            <h2>{result.title}</h2>
+            <p>{result.subtitle}</p>
+            <p>{result.description}</p>
+            <dl>
+              {result.metadata.map((item) => (
+                <div key={item.label}>
+                  <dt>{item.label}</dt>
+                  <dd>{item.value}</dd>
+                </div>
+              ))}
+            </dl>
+            <a href={result.externalUrl}>{externalLinkLabel}</a>
+          </article>
+        ))}
+      </div>
+    )
+  },
+}))
+
 const result = {
   id: 'github:1',
   title: 'The vince7488',
@@ -49,6 +74,22 @@ describe('App', () => {
     expect(screen.getByLabelText('Book title or author')).toHaveAttribute('placeholder', 'The Lord of the Rings')
     expect(screen.getByText('Example: The Lord of the Rings')).toBeVisible()
     expect(screen.getByRole('button', { name: 'Search Open Library' })).toBeVisible()
+  })
+
+  it('applies the larger result cap when searching Open Library', async () => {
+    const user = userEvent.setup()
+    searchProvider.mockResolvedValue([])
+    render(<App />)
+
+    await user.selectOptions(screen.getByLabelText('API provider'), 'open-library')
+    await user.type(screen.getByLabelText('Book title or author'), 'hobbit')
+    await user.click(screen.getByRole('button', { name: 'Search Open Library' }))
+
+    expect(searchProvider).toHaveBeenCalledWith('open-library', 'hobbit', {
+      matchLevel: 0,
+      limit: 52,
+      rankingThreshold: 0.8,
+    })
   })
 
   it('clears the current query and rendered results', async () => {

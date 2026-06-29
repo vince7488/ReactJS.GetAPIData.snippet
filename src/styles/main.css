@@ -35,6 +35,11 @@ select {
   background: radial-gradient(circle at top left, rgb(13 110 253 / 12%), transparent 32rem), #e7edee;
 }
 
+.app-container {
+  width: min(calc(100% - 2rem), 1600px);
+  margin: 0 auto;
+}
+
 .app-header {
   max-width: 760px;
   margin: 0 auto 2rem;
@@ -135,27 +140,24 @@ select {
   font-weight: 600;
 }
 
-.result-list__virtual-list {
-  padding-right: 0.35rem;
+.result-list__load-more-marker {
+  height: 1px;
 }
 
-.result-list__virtual-row {
-  padding: 0.5rem;
+.masonry-grid {
+  width: 100%;
+  outline: none;
 }
 
-.result-list__virtual-card {
-  display: block;
-  height: 100%;
-}
-
-.result-list__virtual-card .result-card {
-  height: 100%;
+.result-card-wrapper {
+  min-width: 0;
 }
 
 .result-card {
-  display: grid;
-  grid-template-columns: minmax(105px, 0.38fr) minmax(0, 1fr);
+  display: flex;
   overflow: hidden;
+  min-height: 100%;
+  flex-direction: column;
   border: 1px solid rgb(33 37 41 / 18%);
   border-radius: 0.75rem;
   background: rgb(255 255 255 / 86%);
@@ -195,6 +197,7 @@ select {
 .result-card__body {
   display: flex;
   min-width: 0;
+  flex: 1;
   flex-direction: column;
   padding: 1.1rem;
 }
@@ -266,10 +269,6 @@ select {
 }
 
 @media (max-width: 420px) {
-  .result-card {
-    grid-template-columns: 1fr;
-  }
-
   .result-card__media {
     min-height: 150px;
   }

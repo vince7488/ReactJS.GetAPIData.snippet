@@ -1,51 +1,74 @@
-import { List } from 'react-window'
-import ResultCard from './ResultCard'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import MasonryGrid from './MasonryGrid'
+import { getResultDisplayPolicy } from '../utils/resultDisplayPolicy'
 
-const VIRTUAL_RESULT_THRESHOLD = 10
-const VIRTUAL_RESULT_ROW_HEIGHT = 340
+const MASONRY_COLUMN_COUNT = 3
 
-function VirtualResultRow({ index, style, results, externalLinkLabel }) {
-  return (
-    <div className='result-list__virtual-row' style={style}>
-      <ResultCard result={results[index]} externalLinkLabel={externalLinkLabel} className='result-list__virtual-card' />
-    </div>
-  )
+function getResultSummary(totalCount, visibleCount, hasMoreResults, revealIncrement) {
+  const resultCountText = `${totalCount} ${totalCount === 1 ? 'result' : 'results'}`
+
+  if (!hasMoreResults) {
+    return resultCountText
+  }
+
+  return `${resultCountText} — showing ${visibleCount}; scroll to load ${Math.min(revealIncrement, totalCount - visibleCount)} more`
 }
 
-function ResultList({ results, externalLinkLabel, resultsLabel }) {
-  const shouldVirtualize = results.length > VIRTUAL_RESULT_THRESHOLD
+function ProgressiveResultList({ cappedResults, displayPolicy, externalLinkLabel, initialVisibleCount, resultsLabel }) {
+  const [visibleCount, setVisibleCount] = useState(initialVisibleCount)
+  const loadMoreRef = useRef(null)
+  const visibleResults = cappedResults.slice(0, visibleCount)
+  const hasMoreResults = visibleCount < cappedResults.length
+
+  useEffect(() => {
+    const loadMoreMarker = loadMoreRef.current
+
+    if (!hasMoreResults || !loadMoreMarker || typeof IntersectionObserver === 'undefined') {
+      return undefined
+    }
+
+    const intersectionObserver = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setVisibleCount((currentVisibleCount) => Math.min(currentVisibleCount + displayPolicy.revealIncrement, cappedResults.length))
+        }
+      },
+      { rootMargin: '360px 0px' },
+    )
+
+    intersectionObserver.observe(loadMoreMarker)
+
+    return () => intersectionObserver.disconnect()
+  }, [cappedResults.length, displayPolicy.revealIncrement, hasMoreResults])
 
   return (
     <section aria-live='polite' aria-label={resultsLabel}>
-      {results.length > 0 && (
+      {cappedResults.length > 0 && (
         <p className='results-summary'>
-          {results.length} {results.length === 1 ? 'result' : 'results'}
-          {shouldVirtualize && ` — showing ${VIRTUAL_RESULT_THRESHOLD} at a time`}
+          {getResultSummary(cappedResults.length, visibleCount, hasMoreResults, displayPolicy.revealIncrement)}
         </p>
       )}
-      {shouldVirtualize ? (
-        <List
-          aria-label={`${resultsLabel}, virtualized`}
-          className='result-list__virtual-list'
-          defaultHeight={VIRTUAL_RESULT_ROW_HEIGHT * VIRTUAL_RESULT_THRESHOLD}
-          rowComponent={VirtualResultRow}
-          rowCount={results.length}
-          rowHeight={VIRTUAL_RESULT_ROW_HEIGHT}
-          rowProps={{ results, externalLinkLabel }}
-          style={{
-            height: VIRTUAL_RESULT_ROW_HEIGHT * VIRTUAL_RESULT_THRESHOLD,
-            width: '100%',
-          }}
-          overscanCount={2}
-        />
-      ) : (
-        <div className='row align-items-stretch'>
-          {results.map((result) => (
-            <ResultCard key={result.id} result={result} externalLinkLabel={externalLinkLabel} />
-          ))}
-        </div>
-      )}
+      <MasonryGrid results={visibleResults} externalLinkLabel={externalLinkLabel} columnCount={MASONRY_COLUMN_COUNT} />
+      {hasMoreResults && <div ref={loadMoreRef} className='result-list__load-more-marker' aria-hidden='true' />}
     </section>
+  )
+}
+
+function ResultList({ results, externalLinkLabel, resultsLabel, providerId }) {
+  const displayPolicy = getResultDisplayPolicy(providerId)
+  const cappedResults = useMemo(() => results.slice(0, displayPolicy.maxVisibleCount), [results, displayPolicy.maxVisibleCount])
+  const resultSetKey = `${providerId}:${displayPolicy.maxVisibleCount}:${cappedResults.map((result) => result.id).join('|')}`
+  const initialVisibleCount = Math.min(displayPolicy.initialVisibleCount, cappedResults.length)
+
+  return (
+    <ProgressiveResultList
+      key={resultSetKey}
+      cappedResults={cappedResults}
+      displayPolicy={displayPolicy}
+      externalLinkLabel={externalLinkLabel}
+      initialVisibleCount={initialVisibleCount}
+      resultsLabel={resultsLabel}
+    />
   )
 }
 

@@ -1,6 +1,18 @@
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { act, render, screen, waitFor } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import ResultList from './ResultList'
+
+vi.mock('./MasonryGrid', () => ({
+  default({ results }) {
+    return (
+      <div className='masonry-grid' role='list'>
+        {results.map((result) => (
+          <article key={result.id}>{result.title}</article>
+        ))}
+      </div>
+    )
+  },
+}))
 
 function createResult(index) {
   return {
@@ -15,23 +27,85 @@ function createResult(index) {
 }
 
 describe('ResultList', () => {
-  it('renders the standard grid for ten or fewer results', () => {
-    render(<ResultList results={[createResult(1)]} externalLinkLabel='View result' resultsLabel='Test results' />)
+  let triggerIntersection
 
+  beforeEach(() => {
+    triggerIntersection = undefined
+    globalThis.IntersectionObserver = vi.fn(function IntersectionObserverMock(callback) {
+      triggerIntersection = callback
+
+      return {
+        observe: vi.fn(),
+        disconnect: vi.fn(),
+      }
+    })
+  })
+
+  afterEach(() => {
+    delete globalThis.IntersectionObserver
+  })
+
+  it('renders masonry cards without switching to a virtualized row list', () => {
+    render(<ResultList providerId='github' results={[createResult(1)]} externalLinkLabel='View result' resultsLabel='Test results' />)
+
+    expect(screen.getByRole('list')).toHaveClass('masonry-grid')
     expect(screen.getByText('1 result')).toBeInTheDocument()
     expect(screen.queryByLabelText(/virtualized/i)).not.toBeInTheDocument()
   })
 
-  it('virtualizes results when more than ten are available', () => {
+  it('progressively reveals GitHub results from six cards in groups of three', async () => {
     render(
       <ResultList
-        results={Array.from({ length: 11 }, (_, index) => createResult(index + 1))}
+        providerId='github'
+        results={Array.from({ length: 12 }, (_, index) => createResult(index + 1))}
         externalLinkLabel='View result'
         resultsLabel='Test results'
       />,
     )
 
-    expect(screen.getByText('11 results — showing 10 at a time')).toBeInTheDocument()
-    expect(screen.getByLabelText('Test results, virtualized')).toBeInTheDocument()
+    expect(screen.getByText('12 results — showing 6; scroll to load 3 more')).toBeInTheDocument()
+    expect(screen.getByText('Result 6')).toBeInTheDocument()
+    expect(screen.queryByText('Result 7')).not.toBeInTheDocument()
+
+    await waitFor(() => expect(globalThis.IntersectionObserver).toHaveBeenCalled())
+
+    act(() => {
+      triggerIntersection([{ isIntersecting: true }])
+    })
+
+    expect(screen.getByText('12 results — showing 9; scroll to load 3 more')).toBeInTheDocument()
+    expect(screen.getByText('Result 9')).toBeInTheDocument()
+    expect(screen.queryByText('Result 10')).not.toBeInTheDocument()
+
+    act(() => {
+      triggerIntersection([{ isIntersecting: true }])
+    })
+
+    expect(screen.getByText('12 results')).toBeInTheDocument()
+    expect(screen.getByText('Result 12')).toBeInTheDocument()
+  })
+
+  it('progressively reveals Open Library and PokéAPI sized result sets from nine cards in groups of six', async () => {
+    render(
+      <ResultList
+        providerId='open-library'
+        results={Array.from({ length: 52 }, (_, index) => createResult(index + 1))}
+        externalLinkLabel='View result'
+        resultsLabel='Test results'
+      />,
+    )
+
+    expect(screen.getByText('52 results — showing 9; scroll to load 6 more')).toBeInTheDocument()
+    expect(screen.getByText('Result 9')).toBeInTheDocument()
+    expect(screen.queryByText('Result 10')).not.toBeInTheDocument()
+
+    await waitFor(() => expect(globalThis.IntersectionObserver).toHaveBeenCalled())
+
+    act(() => {
+      triggerIntersection([{ isIntersecting: true }])
+    })
+
+    expect(screen.getByText('52 results — showing 15; scroll to load 6 more')).toBeInTheDocument()
+    expect(screen.getByText('Result 15')).toBeInTheDocument()
   })
 })

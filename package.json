@@ -29,9 +29,9 @@
   },
   "dependencies": {
     "bootstrap": "^5.3.8",
+    "masonic": "^4.1.0",
     "react": "^19.2.7",
-    "react-dom": "^19.2.7",
-    "react-window": "^2.2.7"
+    "react-dom": "^19.2.7"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

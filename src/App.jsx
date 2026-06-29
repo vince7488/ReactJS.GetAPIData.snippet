@@ -4,6 +4,7 @@ import ResultList from './components/ResultList'
 import SearchForm from './components/SearchForm'
 import { DEFAULT_PROVIDER_ID, getProvider, getProviders } from './providers/registry'
 import { searchProvider } from './services/searchService'
+import { getResultDisplayPolicy } from './utils/resultDisplayPolicy'
 import { createSearchPolicy, loadSearchPolicy, saveSearchPolicy } from './utils/searchPolicy'
 
 function App() {
@@ -12,6 +13,7 @@ function App() {
   const [results, setResults] = useState([])
   const providers = getProviders()
   const selectedProvider = getProvider(selectedProviderId)
+  const resultDisplayPolicy = getResultDisplayPolicy(selectedProviderId)
 
   function changeProvider(providerId) {
     setSelectedProviderId(providerId)
@@ -19,7 +21,8 @@ function App() {
   }
 
   async function handleSearch(query) {
-    const nextResults = await searchProvider(selectedProviderId, query, searchPolicy)
+    const providerSearchPolicy = createSearchPolicy({ ...searchPolicy, limit: resultDisplayPolicy.searchLimit })
+    const nextResults = await searchProvider(selectedProviderId, query, providerSearchPolicy)
     setResults(nextResults)
   }
 
@@ -37,7 +40,7 @@ function App() {
 
   return (
     <main className='app-shell'>
-      <section className='container py-4 py-md-5'>
+      <section className='app-container py-4 py-md-5'>
         <header className='app-header text-center'>
           <p className='app-kicker'>
             React provider adapter demo by{' '}
@@ -62,6 +65,7 @@ function App() {
         </div>
 
         <ResultList
+          providerId={selectedProviderId}
           results={results}
           externalLinkLabel={selectedProvider.externalLinkLabel}
           resultsLabel={selectedProvider.resultsLabel}
