@@ -273,22 +273,39 @@ async function hydrateGitHubResult(result, fetchImplementation) {
   }
 
   const request = buildGitHubUserRequest(getGitHubLogin(result))
+  let response
 
   try {
-    const response = await fetchImplementation(request.url, request.options)
+    response = await fetchImplementation(request.url, request.options)
+  } catch (cause) {
+    throw new ProviderError(PROVIDER_ERROR_CODES.network, 'GitHub profile hydration request failed.', { cause })
+  }
 
-    if (!response.ok) {
-      return result
-    }
+  if (!response.ok) {
+    throw new ProviderError(PROVIDER_ERROR_CODES.http, `GitHub profile hydration returned HTTP ${response.status}.`, {
+      status: response.status,
+    })
+  }
 
+  try {
     return adaptGitHubUser(await response.json())
-  } catch {
-    return result
+  } catch (cause) {
+    throw new ProviderError(PROVIDER_ERROR_CODES.invalidResponse, 'GitHub profile hydration returned invalid JSON.', { cause })
+  }
+}
+
+function assertGitHubHydrationComplete(result) {
+  if (hasUnloadedGitHubMetadata(result)) {
+    throw new ProviderError(PROVIDER_ERROR_CODES.invalidResponse, 'GitHub profile metadata is incomplete after hydration.')
   }
 }
 
 export async function hydrateGitHubResults(results, { fetchImplementation }) {
-  return Promise.all(results.map((result) => hydrateGitHubResult(result, fetchImplementation)))
+  const hydratedResults = await Promise.all(results.map((result) => hydrateGitHubResult(result, fetchImplementation)))
+
+  hydratedResults.forEach(assertGitHubHydrationComplete)
+
+  return hydratedResults
 }
 
 export function mapGitHubError(error) {

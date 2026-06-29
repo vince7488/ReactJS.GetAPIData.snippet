@@ -115,4 +115,69 @@ describe('searchProvider', () => {
     expect(results[0].metadata).toContainEqual({ label: 'Company', value: 'Icin Co.' })
     expect(results[1].metadata).toContainEqual({ label: 'Company', value: 'Volnn Co.' })
   })
+
+  it('maps mandatory GitHub profile hydration failures instead of returning partial metadata', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          items: [
+            {
+              id: 1,
+              login: 'vinno',
+              score: 42,
+              avatar_url: 'https://example.com/vinno.png',
+              html_url: 'https://github.com/vinno',
+            },
+          ],
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 403,
+      })
+
+    await expect(searchProvider('github', 'vi', { matchLevel: 1, limit: 12, rankingThreshold: 0.8 }, fetchMock)).rejects.toThrow(
+      'GitHub has temporarily rate-limited this search. Try again later.',
+    )
+  })
+
+  it('maps empty PokéAPI deep hydration results through the selected provider', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          results: [{ name: 'caterpie', url: 'https://pokeapi.co/api/v2/pokemon/10/' }],
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          id: 10,
+          name: 'caterpie',
+          species: { url: 'https://pokeapi.co/api/v2/pokemon-species/10/' },
+          types: [{ type: { name: 'bug' } }],
+          abilities: [],
+          sprites: {},
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          evolution_chain: { url: 'https://pokeapi.co/api/v2/evolution-chain/4/' },
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          chain: { species: { name: 'caterpie' }, evolves_to: [] },
+        }),
+      })
+
+    await expect(searchProvider('pokeapi', 'pik', { matchLevel: 4, limit: 12, rankingThreshold: 0.8 }, fetchMock)).rejects.toThrow(
+      "That Pokémon couldn't be found.",
+    )
+  })
 })

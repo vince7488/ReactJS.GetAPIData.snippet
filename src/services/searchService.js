@@ -85,6 +85,10 @@ async function fetchProviderData(provider, query, searchPolicy, fetchImplementat
     throw new ProviderError(PROVIDER_ERROR_CODES.invalidResponse, 'The provider hydrated results could not be normalized.')
   }
 
+  if (hydratedResults.length === 0) {
+    throw new ProviderError(PROVIDER_ERROR_CODES.noResults, 'The provider returned no hydrated results.')
+  }
+
   return hydratedResults
 }
 

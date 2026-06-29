@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { ProviderError } from './providerContract'
+import { PROVIDER_ERROR_CODES, ProviderError } from './providerContract'
 import {
   adaptGitHubResponse,
   buildGitHubRequest,
@@ -164,7 +164,7 @@ describe('GitHub provider', () => {
     expect(hydrated.metadata).toContainEqual({ label: 'Followers', value: '11' })
   })
 
-  it('keeps GitHub search candidates when profile hydration fails', async () => {
+  it('fails GitHub search candidate hydration when the profile request fails', async () => {
     const [candidate] = adaptGitHubResponse({
       items: [{ id: 2, login: 'vinno', score: 42 }],
     })
@@ -173,7 +173,29 @@ describe('GitHub provider', () => {
       status: 403,
     })
 
-    await expect(hydrateGitHubResults([candidate], { fetchImplementation: fetchMock })).resolves.toEqual([candidate])
+    await expect(hydrateGitHubResults([candidate], { fetchImplementation: fetchMock })).rejects.toMatchObject({
+      code: PROVIDER_ERROR_CODES.http,
+      status: 403,
+    })
+  })
+
+  it('fails GitHub search candidate hydration when metadata remains incomplete', async () => {
+    const [candidate] = adaptGitHubResponse({
+      items: [{ id: 2, login: 'vinno', score: 42 }],
+    })
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({
+        id: 2,
+        login: 'vinno',
+        avatar_url: 'https://example.com/vinno.png',
+        html_url: 'https://github.com/vinno',
+      }),
+    })
+
+    await expect(hydrateGitHubResults([candidate], { fetchImplementation: fetchMock })).rejects.toMatchObject({
+      code: PROVIDER_ERROR_CODES.invalidResponse,
+    })
   })
 
   it('applies level 0 exact case-insensitive GitHub matching', () => {

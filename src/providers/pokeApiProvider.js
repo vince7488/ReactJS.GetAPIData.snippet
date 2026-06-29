@@ -3,7 +3,9 @@ import { createSearchPolicy } from '../utils/searchPolicy'
 
 const POKE_API = 'https://pokeapi.co/api/v2/pokemon'
 const POKE_API_CATALOG_LIMIT = 100000
-const POKEMON_QUERY_PATTERN = /^[a-z\d]+(?:[ -][a-z\d]+)*$/i
+const POKE_API_DEEP_SCAN_BATCH_SIZE = 20
+const POKEMON_ALPHA_QUERY_PATTERN = /^[a-z]+$/i
+const POKEMON_NUMBER_QUERY_PATTERN = /^\d+$/
 
 function toDisplayName(value) {
   return value
@@ -19,13 +21,20 @@ export function validatePokeApiQuery(query) {
     throw new ProviderError(PROVIDER_ERROR_CODES.validation, 'Enter a Pokémon name or Pokédex number.')
   }
 
-  if (!POKEMON_QUERY_PATTERN.test(searchTerm)) {
-    throw new ProviderError(PROVIDER_ERROR_CODES.validation, 'Use a Pokémon name or a positive Pokédex number.')
+  const isAlphaQuery = POKEMON_ALPHA_QUERY_PATTERN.test(searchTerm)
+  const isNumberQuery = POKEMON_NUMBER_QUERY_PATTERN.test(searchTerm)
+
+  if (!isAlphaQuery && !isNumberQuery) {
+    throw new ProviderError(PROVIDER_ERROR_CODES.validation, 'Use either letters or numbers only for a PokéAPI search.')
   }
 
-  const normalizedQuery = searchTerm.toLowerCase().replaceAll(' ', '-')
+  if (isAlphaQuery && searchTerm.length < 2) {
+    throw new ProviderError(PROVIDER_ERROR_CODES.validation, 'Please type more characters to search.')
+  }
 
-  if (/^\d+$/.test(normalizedQuery) && Number(normalizedQuery) < 1) {
+  const normalizedQuery = isNumberQuery ? String(Number(searchTerm)) : searchTerm.toLowerCase()
+
+  if (isNumberQuery && Number(normalizedQuery) < 1) {
     throw new ProviderError(PROVIDER_ERROR_CODES.validation, 'Pokédex numbers must be greater than zero.')
   }
 
@@ -40,13 +49,7 @@ export function mapPokeApiSearchPolicy(searchPolicy) {
   }
 }
 
-export function buildPokeApiRequest(searchTerm, searchPolicy) {
-  const providerPolicy = mapPokeApiSearchPolicy(searchPolicy)
-  const url =
-    providerPolicy.strategy === 'exact'
-      ? `${POKE_API}/${encodeURIComponent(searchTerm)}`
-      : `${POKE_API}?limit=${POKE_API_CATALOG_LIMIT}&offset=0`
-
+function buildPokeApiJsonRequest(url) {
   return {
     url,
     options: {
@@ -55,6 +58,16 @@ export function buildPokeApiRequest(searchTerm, searchPolicy) {
       },
     },
   }
+}
+
+export function buildPokeApiRequest(searchTerm, searchPolicy) {
+  const providerPolicy = mapPokeApiSearchPolicy(searchPolicy)
+  const url =
+    providerPolicy.strategy === 'exact'
+      ? `${POKE_API}/${encodeURIComponent(searchTerm)}`
+      : `${POKE_API}?limit=${POKE_API_CATALOG_LIMIT}&offset=0`
+
+  return buildPokeApiJsonRequest(url)
 }
 
 function adaptPokeApiPokemon(pokemon) {
@@ -124,6 +137,207 @@ export function getPokeApiCandidateFields(result) {
   return [result.title, result.subtitle, result.id.replace(/^pokeapi:/, '')]
 }
 
+function isPokeApiCatalogResult(result) {
+  return result.metadata.some((item) => item.label === 'Match source' && item.value === 'Pokémon name catalog')
+}
+
+function getPokeApiName(result) {
+  return result.title.toLowerCase().replace(/[^a-z\d]/g, '')
+}
+
+function getPokeApiNumber(result) {
+  return result.id.replace(/^pokeapi:/, '')
+}
+
+function getSearchCharacters(query) {
+  return [...new Set(query.toLowerCase().split(''))]
+}
+
+function scorePokeApiValue(query, value, matchLevel) {
+  const normalizedQuery = query.toLowerCase()
+  const normalizedValue = String(value ?? '').toLowerCase()
+
+  if (!normalizedValue) {
+    return null
+  }
+
+  if (matchLevel === 0) {
+    return normalizedValue === normalizedQuery ? 100 : null
+  }
+
+  const containsQuery = normalizedValue.includes(normalizedQuery)
+  const startsWithQuery = normalizedValue.startsWith(normalizedQuery)
+  const queryCharacters = getSearchCharacters(normalizedQuery)
+  const hasAllCharacters = queryCharacters.every((character) => normalizedValue.includes(character))
+
+  if (matchLevel === 1 && !startsWithQuery) {
+    return null
+  }
+
+  if (matchLevel === 2 && !containsQuery) {
+    return null
+  }
+
+  if (matchLevel === 3 && !hasAllCharacters) {
+    return null
+  }
+
+  if (normalizedValue === normalizedQuery) {
+    return 100
+  }
+
+  if (startsWithQuery) {
+    return 80 - normalizedValue.length / 1000
+  }
+
+  if (containsQuery) {
+    return 60 - normalizedValue.indexOf(normalizedQuery) / 100 - normalizedValue.length / 1000
+  }
+
+  return 40 - normalizedValue.length / 1000
+}
+
+function scorePokeApiResult(query, result, matchLevel) {
+  return [getPokeApiName(result), getPokeApiNumber(result)].reduce((bestScore, value) => {
+    const score = scorePokeApiValue(query, value, matchLevel)
+
+    return score === null ? bestScore : Math.max(bestScore, score)
+  }, Number.NEGATIVE_INFINITY)
+}
+
+export function rankPokeApiResults(query, results, searchPolicy) {
+  const policy = createSearchPolicy(searchPolicy)
+
+  if (policy.matchLevel === 4) {
+    return results
+  }
+
+  return results
+    .map((result, index) => ({
+      result,
+      index,
+      score: scorePokeApiResult(query, result, policy.matchLevel),
+    }))
+    .filter(({ score }) => Number.isFinite(score))
+    .sort((left, right) => right.score - left.score || left.index - right.index)
+    .slice(0, policy.limit)
+    .map(({ result }) => result)
+}
+
+async function fetchPokeApiJson(url, fetchImplementation) {
+  let response
+
+  try {
+    response = await fetchImplementation(url, buildPokeApiJsonRequest(url).options)
+  } catch (cause) {
+    throw new ProviderError(PROVIDER_ERROR_CODES.network, 'The PokéAPI detail request failed.', { cause })
+  }
+
+  if (!response.ok) {
+    throw new ProviderError(PROVIDER_ERROR_CODES.http, `PokéAPI returned HTTP ${response.status}.`, { status: response.status })
+  }
+
+  try {
+    return await response.json()
+  } catch (cause) {
+    throw new ProviderError(PROVIDER_ERROR_CODES.invalidResponse, 'The PokéAPI detail response was not valid JSON.', { cause })
+  }
+}
+
+async function fetchCachedPokeApiJson(url, fetchImplementation, cache) {
+  if (!url) {
+    return null
+  }
+
+  if (!cache.has(url)) {
+    cache.set(url, fetchPokeApiJson(url, fetchImplementation))
+  }
+
+  return cache.get(url)
+}
+
+async function hydratePokeApiCatalogResult(result, fetchImplementation) {
+  if (!isPokeApiCatalogResult(result)) {
+    return {
+      result,
+      pokemon: null,
+      deepPayload: null,
+    }
+  }
+
+  const pokemon = await fetchPokeApiJson(result.externalUrl, fetchImplementation)
+
+  return {
+    result: adaptPokeApiPokemon(pokemon),
+    pokemon,
+    deepPayload: {
+      pokemon,
+    },
+  }
+}
+
+async function hydratePokeApiDeepPayload(hydratedCandidate, fetchImplementation, cache) {
+  if (!hydratedCandidate.pokemon) {
+    return hydratedCandidate
+  }
+
+  const species = await fetchCachedPokeApiJson(hydratedCandidate.pokemon.species?.url, fetchImplementation, cache)
+  const evolutionChain = await fetchCachedPokeApiJson(species?.evolution_chain?.url, fetchImplementation, cache)
+
+  return {
+    ...hydratedCandidate,
+    deepPayload: {
+      pokemon: hydratedCandidate.pokemon,
+      species,
+      evolutionChain,
+    },
+  }
+}
+
+function matchesPokeApiDeepPayload(query, deepPayload) {
+  return JSON.stringify(deepPayload ?? {})
+    .toLowerCase()
+    .includes(query.toLowerCase())
+}
+
+async function hydratePokeApiStandardResults(results, fetchImplementation) {
+  const hydratedCandidates = await Promise.all(results.map((result) => hydratePokeApiCatalogResult(result, fetchImplementation)))
+
+  return hydratedCandidates.map(({ result }) => result)
+}
+
+export async function hydratePokeApiResults(results, { query, searchPolicy, fetchImplementation }) {
+  const policy = createSearchPolicy(searchPolicy)
+
+  if (policy.matchLevel !== 4) {
+    return hydratePokeApiStandardResults(results, fetchImplementation)
+  }
+
+  const matches = []
+  const cache = new Map()
+
+  for (let index = 0; index < results.length && matches.length < policy.limit; index += POKE_API_DEEP_SCAN_BATCH_SIZE) {
+    const batch = results.slice(index, index + POKE_API_DEEP_SCAN_BATCH_SIZE)
+    const hydratedCandidates = await Promise.all(
+      batch.map(async (result) =>
+        hydratePokeApiDeepPayload(await hydratePokeApiCatalogResult(result, fetchImplementation), fetchImplementation, cache),
+      ),
+    )
+
+    for (const candidate of hydratedCandidates) {
+      if (matchesPokeApiDeepPayload(query, candidate.deepPayload)) {
+        matches.push(candidate.result)
+      }
+
+      if (matches.length >= policy.limit) {
+        break
+      }
+    }
+  }
+
+  return matches
+}
+
 export function mapPokeApiError(error) {
   if (error.code === PROVIDER_ERROR_CODES.validation) {
     return error.message
@@ -158,5 +372,7 @@ export const pokeApiProvider = defineProvider({
   buildRequest: buildPokeApiRequest,
   adaptResponse: adaptPokeApiResponse,
   getCandidateFields: getPokeApiCandidateFields,
+  rankResults: rankPokeApiResults,
+  hydrateResults: hydratePokeApiResults,
   mapError: mapPokeApiError,
 })
