@@ -2,18 +2,22 @@
 
 A provider-driven React application for searching GitHub, Open Library, and PokéAPI through one shared interface.
 
-The project was originally built with React 16, Webpack 4, Express, Axios, React Bootstrap, and LESS. It now uses current React, Vite,
-Bootstrap, the browser Fetch API, ESLint, Prettier, and Vitest. Provider adapters isolate API request and response details from the
-presentation components. Intentionally kept in React JSX (and not TypeScript) to showcase ability to be versatile with JSX (I do love
-TypeScript better, though.)
+The project was originally built with React 16, Webpack 4, Express, Axios, React Bootstrap, and LESS css. I've updated and it now uses
+current React, Vite, Bootstrap, the browser Fetch API, ESLint, Prettier, and Vitest. Provider adapters isolate API request and response
+details from the presentation components.
+
+_\*Intentionally kept in React JSX (and not TypeScript) to showcase ability to be versatile with JSX (I do love TypeScript better,
+though.)_
 
 ## Features
 
-- Select GitHub, Open Library, or PokéAPI from an accessible provider control.
-- Change form labels, examples, validation, and links for the selected API.
+- Select to try out GitHub API, Open Library API, or PokéAPI from a drop down control.
+- Tune the search string matching with a slider from "strict" to "lenient". This adjusts how exactly you want your query to match the
+  results.
+- You can clear the current query and rendered results from the search form.
 - Normalize every API response into one shared result-card model.
-- Keep request construction, response adaptation, validation, and error mapping inside each provider adapter.
-- Display single-item and multi-item responses in a responsive Bootstrap grid.
+- Keeps request construction, response adaptation, validation, ranking, hydration, and error mapping inside each provider adapter.
+- Display small result sets in a responsive Bootstrap grid and larger result sets with `react-window` virtualization.
 
 ## Requirements
 
@@ -42,28 +46,21 @@ Vite prints the local development URL when the server starts.
 | `npm test`             | Run the Vitest test suite once          |
 | `npm run test:watch`   | Run Vitest in watch mode                |
 
-## Project Structure
-
-```text
-src/
-  components/   React UI components
-  providers/    Provider adapters, contract, and registry
-  services/     Provider-independent request orchestration
-  styles/       Application CSS
-  test/         Shared test setup
-  App.jsx       Application state and composition
-  main.jsx      React entry point
-```
-
 ## Provider Contract
 
 Each provider adapter supplies:
 
 - Provider name, description, labels, placeholder, example, and link copy
 - `validateQuery(query)`
-- `buildRequest(validatedQuery)`
-- `adaptResponse(payload)`
+- `buildRequest(validatedQuery, searchPolicy)`
+- `adaptResponse(payload, context)`
+- `getCandidateFields(result)`
 - `mapError(error)`
+
+Providers can also supply optional hooks:
+
+- `rankResults(query, results, searchPolicy)`
+- `hydrateResults(results, context)`
 
 Adapters return an array of normalized results with:
 
@@ -74,15 +71,50 @@ id, title, subtitle, description, imageUrl, externalUrl, metadata
 Adding another provider requires registering one adapter in `src/providers/registry.js`; presentation components do not need
 provider-specific branches.
 
+## Search Policy
+
+The shared search policy is provider-independent:
+
+```js
+{
+  matchLevel: 0, // 0 strict → 4 lenient
+  limit: 12,
+  rankingThreshold: 0.8
+}
+```
+
+The match slider is intentionally not a universal fuzzy-search algorithm. At first I did want fuzzy, but I wasn't satisfied with the
+results. Makes me think fuzzy is overrated. Each provider maps the five levels to behavior that fits its API surface:
+
+- Level 0: strict
+- Level 1: semi-strict
+- Level 2: median
+- Level 3: semi-lenient
+- Level 4: lenient
+
 ## API Notes
 
 The app calls each public API directly from the browser without credentials. Provider availability and unauthenticated rate limits
 still apply:
 
-- GitHub performs an exact username lookup.
-- Open Library searches books and returns up to six matches.
-- PokéAPI performs an exact Pokémon name or National Pokédex number lookup.
+### GitHub API
 
-## Credits
+- GitHub requires at least two characters (alphanumeric), searches public users by provider-specific match level.
+- Only searches within the `username` value.
+- Hydrates displayed results through `GET /users/:login` so company, location, repository, and follower metadata are complete.
+- Broader levels can consume GitHub rate limits quickly.
+
+### Open Library API
+
+- Open Library searches books with provider-owned title, author, and alternate-title ranking: exact title, title prefix, unordered
+  title tokens, title-and-author matching, then lenient token coverage.
+
+### PokéAPI
+
+- PokéAPI accepts letter-only queries of two or more characters, or number-only Pokédex queries of one or more digits. Mixed
+  alphanumeric queries such as `ra1chu` are rejected. Broader levels use the Pokémon catalog, hydrate displayed Pokémon records, and
+  level 4 applies the lenient matching rule to Pokémon names and Pokédex numbers.
+
+## Yours truly
 
 Created by [Vernard Mercader](http://vernard.net)
