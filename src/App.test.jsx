@@ -87,7 +87,7 @@ describe('App', () => {
 
     expect(searchProvider).toHaveBeenCalledWith('open-library', 'hobbit', {
       matchLevel: 0,
-      limit: 52,
+      limit: 54,
       rankingThreshold: 0.8,
     })
   })

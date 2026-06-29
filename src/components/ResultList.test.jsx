@@ -116,13 +116,13 @@ describe('ResultList', () => {
     render(
       <ResultList
         providerId='open-library'
-        results={Array.from({ length: 52 }, (_, index) => createResult(index + 1))}
+        results={Array.from({ length: 54 }, (_, index) => createResult(index + 1))}
         externalLinkLabel='View result'
         resultsLabel='Test results'
       />,
     )
 
-    expect(screen.getByText('52 results — showing 9; scroll to load 6 more')).toBeInTheDocument()
+    expect(screen.getByText('54 results — showing 9; scroll to load 6 more')).toBeInTheDocument()
     expect(screen.getByText('Result 9')).toBeInTheDocument()
     expect(screen.queryByText('Result 10')).not.toBeInTheDocument()
 
@@ -139,7 +139,7 @@ describe('ResultList', () => {
       vi.advanceTimersByTime(300)
     })
 
-    expect(screen.getByText('52 results — showing 15; scroll to load 6 more')).toBeInTheDocument()
+    expect(screen.getByText('54 results — showing 15; scroll to load 6 more')).toBeInTheDocument()
     expect(screen.getByText('Result 15')).toBeInTheDocument()
   })
 })
