@@ -63,6 +63,12 @@ describe('searchProvider', () => {
       .fn()
       .mockResolvedValueOnce({
         ok: true,
+        json: vi.fn().mockResolvedValue({
+          items: [],
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
         json: vi.fn().mockResolvedValue(firstCatalogPage),
       })
       .mockResolvedValueOnce({
@@ -109,11 +115,52 @@ describe('searchProvider', () => {
 
     const results = await searchProvider('github', 'vin', { matchLevel: 4, limit: 12, rankingThreshold: 0.8 }, fetchMock)
 
-    expect(fetchMock).toHaveBeenCalledTimes(4)
-    expect(fetchMock.mock.calls[1][0]).toContain('since=100')
+    expect(fetchMock).toHaveBeenCalledTimes(5)
+    expect(fetchMock.mock.calls[0][0]).toContain('/search/users')
+    expect(fetchMock.mock.calls[2][0]).toContain('since=100')
     expect(results.map((result) => result.subtitle)).toEqual(['@icin', '@volnn'])
     expect(results[0].metadata).toContainEqual({ label: 'Company', value: 'Icin Co.' })
     expect(results[1].metadata).toContainEqual({ label: 'Company', value: 'Volnn Co.' })
+  })
+
+  it('captures an exact alphanumeric GitHub username before level 3 catalog filtering', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          items: [
+            {
+              id: 7488,
+              login: 'vince7488',
+              score: 42,
+              avatar_url: 'https://example.com/vince7488.png',
+              html_url: 'https://github.com/vince7488',
+            },
+          ],
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue([]),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          id: 7488,
+          login: 'vince7488',
+          avatar_url: 'https://example.com/vince7488.png',
+          html_url: 'https://github.com/vince7488',
+          company: 'Vernard LLC',
+          public_repos: 42,
+          followers: 24,
+        }),
+      })
+
+    const results = await searchProvider('github', 'vince7488', { matchLevel: 3, limit: 12, rankingThreshold: 0.8 }, fetchMock)
+
+    expect(results.map((result) => result.subtitle)).toEqual(['@vince7488'])
+    expect(results[0].metadata).toContainEqual({ label: 'Company', value: 'Vernard LLC' })
   })
 
   it('maps mandatory GitHub profile hydration failures instead of returning partial metadata', async () => {

@@ -53,13 +53,16 @@ describe('GitHub provider', () => {
   })
 
   it('maps lenient levels to GitHub catalog capture', () => {
-    const request = buildGitHubRequest('vi', { matchLevel: 4, limit: 12, rankingThreshold: 0.8 })
-    const url = new URL(request.url)
+    const requests = buildGitHubRequest('vi', { matchLevel: 4, limit: 12, rankingThreshold: 0.8 })
+    const searchUrl = new URL(requests[0].url)
+    const catalogUrl = new URL(requests[1].url)
 
-    expect(mapGitHubSearchPolicy({ matchLevel: 4 })).toEqual({ strategy: 'catalog', requestLimit: 100 })
-    expect(`${url.origin}${url.pathname}`).toBe('https://api.github.com/users')
-    expect(url.searchParams.get('per_page')).toBe('100')
-    expect(url.searchParams.get('since')).toBe('0')
+    expect(mapGitHubSearchPolicy({ matchLevel: 4 })).toEqual({ strategy: 'user-search-and-catalog', requestLimit: 100 })
+    expect(`${searchUrl.origin}${searchUrl.pathname}`).toBe('https://api.github.com/search/users')
+    expect(searchUrl.searchParams.get('q')).toBe('vi in:login')
+    expect(`${catalogUrl.origin}${catalogUrl.pathname}`).toBe('https://api.github.com/users')
+    expect(catalogUrl.searchParams.get('per_page')).toBe('100')
+    expect(catalogUrl.searchParams.get('since')).toBe('0')
   })
 
   it('normalizes a GitHub user into the shared display model', () => {
@@ -228,6 +231,14 @@ describe('GitHub provider', () => {
     expect(
       rankGitHubResults('vi', candidates, { matchLevel: 3, limit: 12, rankingThreshold: 0.8 }).map(({ subtitle }) => subtitle),
     ).toEqual(['@vi', '@vinno', '@davinci', '@vain'])
+  })
+
+  it('applies level 3 matching to alphanumeric usernames', () => {
+    const candidates = ['vince7488', 'vince', 'vince888', '7488', 'vincent7488'].map(createGitHubResult)
+
+    expect(
+      rankGitHubResults('vince7488', candidates, { matchLevel: 3, limit: 12, rankingThreshold: 0.8 }).map(({ subtitle }) => subtitle),
+    ).toEqual(['@vince7488', '@vincent7488'])
   })
 
   it('applies level 4 two-of-three GitHub matching for three-character queries', () => {

@@ -42,7 +42,7 @@ export function mapGitHubSearchPolicy(searchPolicy) {
   }
 
   return {
-    strategy: policy.matchLevel <= 2 ? 'user-search' : 'catalog',
+    strategy: policy.matchLevel <= 2 ? 'user-search' : 'user-search-and-catalog',
     requestLimit: GITHUB_SEARCH_REQUEST_LIMIT,
   }
 }
@@ -128,8 +128,8 @@ export function buildGitHubRequest(username, searchPolicy) {
     return buildGitHubSearchRequest(username, providerPolicy.requestLimit)
   }
 
-  if (providerPolicy.strategy === 'catalog') {
-    return buildGitHubCatalogRequest()
+  if (providerPolicy.strategy === 'user-search-and-catalog') {
+    return [buildGitHubSearchRequest(username, providerPolicy.requestLimit), buildGitHubCatalogRequest()]
   }
 
   return buildGitHubUserRequest(username)
