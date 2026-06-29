@@ -36,7 +36,7 @@ export function mapPokeApiSearchPolicy(searchPolicy) {
   const policy = createSearchPolicy(searchPolicy)
 
   return {
-    strategy: policy.fuzziness === 0 ? 'exact' : 'catalog',
+    strategy: policy.matchLevel === 0 ? 'exact' : 'catalog',
   }
 }
 
@@ -147,7 +147,7 @@ export function mapPokeApiError(error) {
 export const pokeApiProvider = defineProvider({
   id: 'pokeapi',
   name: 'PokéAPI',
-  description: 'Find Pokémon by name or National Pokédex number with exact or fuzzy matching.',
+  description: 'Find Pokémon by name or National Pokédex number.',
   inputLabel: 'Pokémon name or Pokédex number',
   placeholder: 'pikachu or 25',
   example: 'pikachu',

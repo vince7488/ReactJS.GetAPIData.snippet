@@ -1,9 +1,13 @@
-import {defineProvider, PROVIDER_ERROR_CODES, ProviderError} from './providerContract'
-import {createSearchPolicy} from '../utils/searchPolicy'
+import { defineProvider, PROVIDER_ERROR_CODES, ProviderError } from './providerContract'
+import { createSearchPolicy } from '../utils/searchPolicy'
 
 const GITHUB_USERS_API = 'https://api.github.com/users'
 const GITHUB_USER_SEARCH_API = 'https://api.github.com/search/users'
 const GITHUB_API_VERSION = '2026-03-10'
+const GITHUB_SEARCH_REQUEST_LIMIT = 100
+const GITHUB_SEARCH_PAGE_LIMIT = 3
+const GITHUB_CATALOG_PAGE_LIMIT = 3
+const MIN_GITHUB_SEARCH_CHARACTERS = 2
 const USERNAME_PATTERN = /^[a-z\d](?:[a-z\d]|-(?=[a-z\d])){0,38}$/i
 
 export function validateGitHubQuery(query) {
@@ -11,6 +15,10 @@ export function validateGitHubQuery(query) {
 
   if (!username) {
     throw new ProviderError(PROVIDER_ERROR_CODES.validation, 'Enter a GitHub username.')
+  }
+
+  if (username.length < MIN_GITHUB_SEARCH_CHARACTERS) {
+    throw new ProviderError(PROVIDER_ERROR_CODES.validation, 'Please type more characters to search.')
   }
 
   if (!USERNAME_PATTERN.test(username)) {
@@ -26,7 +34,7 @@ export function validateGitHubQuery(query) {
 export function mapGitHubSearchPolicy(searchPolicy) {
   const policy = createSearchPolicy(searchPolicy)
 
-  if (policy.fuzziness === 0) {
+  if (policy.matchLevel === 0) {
     return {
       strategy: 'exact',
       requestLimit: 1,
@@ -34,26 +42,31 @@ export function mapGitHubSearchPolicy(searchPolicy) {
   }
 
   return {
-    strategy: 'user-search',
-    requestLimit: Math.min(100, Math.ceil(policy.limit * (1 + (2 * policy.fuzziness) / 100))),
+    strategy: policy.matchLevel <= 2 ? 'user-search' : 'catalog',
+    requestLimit: GITHUB_SEARCH_REQUEST_LIMIT,
   }
 }
 
-export function buildGitHubRequest(username, searchPolicy) {
-  const providerPolicy = mapGitHubSearchPolicy(searchPolicy)
-  let url = `${GITHUB_USERS_API}/${encodeURIComponent(username)}`
-
-  if (providerPolicy.strategy === 'user-search') {
-    const searchUrl = new URL(GITHUB_USER_SEARCH_API)
-    searchUrl.search = new URLSearchParams({
-      q: `${username} in:login`,
-      per_page: String(providerPolicy.requestLimit),
-    })
-    url = searchUrl.toString()
-  }
+function buildGitHubSearchRequest(searchTerm, requestLimit, page = 1) {
+  const searchUrl = new URL(GITHUB_USER_SEARCH_API)
+  searchUrl.search = new URLSearchParams({
+    q: `${searchTerm} in:login`,
+    per_page: String(requestLimit),
+    page: String(page),
+  })
 
   return {
-    url,
+    url: searchUrl.toString(),
+    maxPages: GITHUB_SEARCH_PAGE_LIMIT,
+    getNextRequest(payload) {
+      const items = Array.isArray(payload?.items) ? payload.items : []
+
+      if (page >= GITHUB_SEARCH_PAGE_LIMIT || items.length < requestLimit) {
+        return null
+      }
+
+      return buildGitHubSearchRequest(searchTerm, requestLimit, page + 1)
+    },
     options: {
       headers: {
         Accept: 'application/vnd.github+json',
@@ -63,9 +76,70 @@ export function buildGitHubRequest(username, searchPolicy) {
   }
 }
 
+function getUniqueSearchCharacters(username) {
+  return [...new Set(username.toLowerCase().match(/[a-z\d-]/g) ?? [])]
+}
+
+function buildGitHubUserRequest(username) {
+  return {
+    url: `${GITHUB_USERS_API}/${encodeURIComponent(username)}`,
+    options: {
+      headers: {
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': GITHUB_API_VERSION,
+      },
+    },
+  }
+}
+
+function buildGitHubCatalogRequest(since = 0) {
+  const catalogUrl = new URL(GITHUB_USERS_API)
+  catalogUrl.search = new URLSearchParams({
+    per_page: String(GITHUB_SEARCH_REQUEST_LIMIT),
+    since: String(since),
+  })
+
+  return {
+    url: catalogUrl.toString(),
+    maxPages: GITHUB_CATALOG_PAGE_LIMIT,
+    getNextRequest(payload) {
+      const users = Array.isArray(payload) ? payload : []
+      const lastUser = users.at(-1)
+
+      if (!lastUser?.id || users.length < GITHUB_SEARCH_REQUEST_LIMIT) {
+        return null
+      }
+
+      return buildGitHubCatalogRequest(lastUser.id)
+    },
+    options: {
+      headers: {
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': GITHUB_API_VERSION,
+      },
+    },
+  }
+}
+
+export function buildGitHubRequest(username, searchPolicy) {
+  const providerPolicy = mapGitHubSearchPolicy(searchPolicy)
+
+  if (providerPolicy.strategy === 'user-search') {
+    return buildGitHubSearchRequest(username, providerPolicy.requestLimit)
+  }
+
+  if (providerPolicy.strategy === 'catalog') {
+    return buildGitHubCatalogRequest()
+  }
+
+  return buildGitHubUserRequest(username)
+}
+
 function adaptGitHubUser(profile) {
   const login = profile.login || 'unknown-user'
-  const isSearchCandidate = profile.score !== undefined
+  const isSearchCandidate =
+    profile.score !== undefined ||
+    !('bio' in profile || 'company' in profile || 'location' in profile || 'public_repos' in profile || 'followers' in profile)
 
   return {
     id: `github:${profile.id ?? login}`,
@@ -77,8 +151,8 @@ function adaptGitHubUser(profile) {
     imageUrl: profile.avatar_url || `https://github.com/identicons/${encodeURIComponent(login)}.png`,
     externalUrl: profile.html_url || `https://github.com/${login}`,
     metadata: [
-      {label: 'Company', value: profile.company || (isSearchCandidate ? 'Not loaded' : 'Not listed')},
-      {label: 'Location', value: profile.location || (isSearchCandidate ? 'Not loaded' : 'Not listed')},
+      { label: 'Company', value: profile.company || (isSearchCandidate ? 'Not loaded' : 'Not listed') },
+      { label: 'Location', value: profile.location || (isSearchCandidate ? 'Not loaded' : 'Not listed') },
       {
         label: 'Repositories',
         value: profile.public_repos === undefined && isSearchCandidate ? 'Not loaded' : String(profile.public_repos ?? 0),
@@ -92,6 +166,18 @@ function adaptGitHubUser(profile) {
 }
 
 export function adaptGitHubResponse(payload) {
+  if (Array.isArray(payload)) {
+    const usersByKey = new Map()
+
+    for (const providerPayload of payload) {
+      for (const profile of adaptGitHubResponse(providerPayload)) {
+        usersByKey.set(profile.id, profile)
+      }
+    }
+
+    return [...usersByKey.values()]
+  }
+
   if (Array.isArray(payload?.items)) {
     return payload.items.map(adaptGitHubUser)
   }
@@ -101,6 +187,108 @@ export function adaptGitHubResponse(payload) {
 
 export function getGitHubCandidateFields(result) {
   return [result.title, result.subtitle]
+}
+
+function getGitHubLogin(result) {
+  return result.subtitle.startsWith('@') ? result.subtitle.slice(1) : result.title
+}
+
+function getSearchCharacters(query) {
+  return getUniqueSearchCharacters(query)
+}
+
+function scoreGitHubLogin(query, login, matchLevel) {
+  const normalizedQuery = query.toLowerCase()
+  const normalizedLogin = login.toLowerCase()
+
+  if (matchLevel === 0) {
+    return normalizedLogin === normalizedQuery ? 100 : null
+  }
+
+  const containsQuery = normalizedLogin.includes(normalizedQuery)
+  const startsWithQuery = normalizedLogin.startsWith(normalizedQuery)
+  const queryCharacters = getSearchCharacters(normalizedQuery)
+  const matchedCharacterCount = queryCharacters.filter((character) => normalizedLogin.includes(character)).length
+  const hasAllCharacters = matchedCharacterCount === queryCharacters.length
+  const minimumLenientCharacterCount = queryCharacters.length >= 3 ? 2 : queryCharacters.length
+  const hasEnoughLenientCharacters = matchedCharacterCount >= minimumLenientCharacterCount
+
+  if (matchLevel === 1 && !startsWithQuery) {
+    return null
+  }
+
+  if (matchLevel === 2 && !containsQuery) {
+    return null
+  }
+
+  if (matchLevel === 3 && !hasAllCharacters) {
+    return null
+  }
+
+  if (matchLevel === 4 && !hasEnoughLenientCharacters) {
+    return null
+  }
+
+  if (normalizedLogin === normalizedQuery) {
+    return 100
+  }
+
+  if (startsWithQuery) {
+    return 80 - normalizedLogin.length / 1000
+  }
+
+  if (containsQuery) {
+    return 60 - normalizedLogin.indexOf(normalizedQuery) / 100 - normalizedLogin.length / 1000
+  }
+
+  if (hasAllCharacters) {
+    return 40 - normalizedLogin.length / 1000
+  }
+
+  return 20 * (matchedCharacterCount / queryCharacters.length) - normalizedLogin.length / 1000
+}
+
+export function rankGitHubResults(query, results, searchPolicy) {
+  const policy = createSearchPolicy(searchPolicy)
+
+  return results
+    .map((result, index) => ({
+      result,
+      index,
+      score: scoreGitHubLogin(query, getGitHubLogin(result), policy.matchLevel),
+    }))
+    .filter(({ score }) => score !== null)
+    .sort((left, right) => right.score - left.score || left.index - right.index)
+    .slice(0, policy.limit)
+    .map(({ result }) => result)
+}
+
+function hasUnloadedGitHubMetadata(result) {
+  return result.metadata.some((item) => item.value === 'Not loaded')
+}
+
+async function hydrateGitHubResult(result, fetchImplementation) {
+  if (!hasUnloadedGitHubMetadata(result)) {
+    return result
+  }
+
+  const request = buildGitHubUserRequest(getGitHubLogin(result))
+
+  try {
+    const response = await fetchImplementation(request.url, request.options)
+
+    if (!response.ok) {
+      return result
+    }
+
+    return adaptGitHubUser(await response.json())
+  } catch {
+    return result
+  }
+}
+
+export async function hydrateGitHubResults(results, { fetchImplementation }) {
+  return Promise.all(results.map((result) => hydrateGitHubResult(result, fetchImplementation)))
 }
 
 export function mapGitHubError(error) {
@@ -126,7 +314,7 @@ export function mapGitHubError(error) {
 export const githubProvider = defineProvider({
   id: 'github',
   name: 'GitHub',
-  description: 'Find public GitHub users by username with exact or broader matching.',
+  description: 'Find public GitHub users by username with provider-specific match levels.',
   inputLabel: 'GitHub username',
   placeholder: 'vince7488',
   example: 'vince7488',
@@ -137,5 +325,7 @@ export const githubProvider = defineProvider({
   buildRequest: buildGitHubRequest,
   adaptResponse: adaptGitHubResponse,
   getCandidateFields: getGitHubCandidateFields,
+  rankResults: rankGitHubResults,
+  hydrateResults: hydrateGitHubResults,
   mapError: mapGitHubError,
 })

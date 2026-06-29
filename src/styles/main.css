@@ -135,6 +135,23 @@ select {
   font-weight: 600;
 }
 
+.result-list__virtual-list {
+  padding-right: 0.35rem;
+}
+
+.result-list__virtual-row {
+  padding: 0.5rem;
+}
+
+.result-list__virtual-card {
+  display: block;
+  height: 100%;
+}
+
+.result-list__virtual-card .result-card {
+  height: 100%;
+}
+
 .result-card {
   display: grid;
   grid-template-columns: minmax(105px, 0.38fr) minmax(0, 1fr);

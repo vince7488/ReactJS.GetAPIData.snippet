@@ -27,9 +27,9 @@ function App() {
     setResults([])
   }
 
-  function changeFuzziness(fuzziness) {
+  function changeMatchLevel(matchLevel) {
     setSearchPolicy((currentPolicy) => {
-      const nextPolicy = createSearchPolicy({ ...currentPolicy, fuzziness })
+      const nextPolicy = createSearchPolicy({ ...currentPolicy, matchLevel })
       saveSearchPolicy(nextPolicy)
       return nextPolicy
     })
@@ -55,8 +55,8 @@ function App() {
             key={selectedProvider.id}
             provider={selectedProvider}
             searchPolicy={searchPolicy}
-            onFuzzinessChange={changeFuzziness}
             onClear={clearSearch}
+            onMatchLevelChange={changeMatchLevel}
             onSearch={handleSearch}
           />
         </div>

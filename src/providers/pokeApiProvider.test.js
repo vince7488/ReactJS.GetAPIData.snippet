@@ -15,8 +15,8 @@ describe('PokéAPI provider', () => {
     })
   })
 
-  it('maps fuzzy intent to the Pokémon name catalog', () => {
-    const request = buildPokeApiRequest('pikchu', { fuzziness: 1, limit: 12, rankingThreshold: 0.8 })
+  it('maps broader match levels to the Pokémon name catalog', () => {
+    const request = buildPokeApiRequest('pikchu', { matchLevel: 1, limit: 12, rankingThreshold: 0.8 })
 
     expect(request.url).toBe('https://pokeapi.co/api/v2/pokemon?limit=100000&offset=0')
   })

@@ -1,44 +1,34 @@
-function getFuzzinessDescription(fuzziness) {
-  if (fuzziness === 0) {
-    return 'strict'
-  }
+import { getSearchMatchLevel } from '../utils/searchPolicy'
 
-  if (fuzziness === 100) {
-    return 'fully fuzzy'
-  }
-
-  return 'fuzzy'
-}
-
-function SearchPolicyControl({ fuzziness, onChange }) {
-  const description = getFuzzinessDescription(fuzziness)
+function SearchPolicyControl({ matchLevel, onChange }) {
+  const level = getSearchMatchLevel(matchLevel)
 
   return (
     <div className='search-policy-control'>
       <div className='search-policy-control__heading'>
-        <label className='form-label fw-semibold mb-0' htmlFor='search-fuzziness'>
-          Search fuzziness
+        <label className='form-label fw-semibold mb-0' htmlFor='search-match-level'>
+          Search match level
         </label>
-        <output className='search-policy-control__value' htmlFor='search-fuzziness' aria-live='polite'>
-          {fuzziness}% fuzzy
+        <output className='search-policy-control__value' htmlFor='search-match-level' aria-live='polite'>
+          Level {level.value}: {level.label}
         </output>
       </div>
 
       <input
-        id='search-fuzziness'
+        id='search-match-level'
         className='form-range'
         type='range'
         min='0'
-        max='100'
+        max='4'
         step='1'
-        value={fuzziness}
-        aria-valuetext={`${fuzziness} out of 100, ${description}`}
+        value={level.value}
+        aria-valuetext={`Level ${level.value} of 4, ${level.label}: ${level.description}`}
         onChange={(event) => onChange(Number(event.target.value))}
       />
 
       <div className='search-policy-control__labels' aria-hidden='true'>
         <span>Strict</span>
-        <span>Fuzzy</span>
+        <span>Lenient</span>
       </div>
     </div>
   )

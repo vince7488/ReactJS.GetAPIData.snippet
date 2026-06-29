@@ -12,17 +12,23 @@ describe('search policy', () => {
   it('uses strict defaults and clamps invalid policy values', () => {
     expect(createSearchPolicy()).toEqual(DEFAULT_SEARCH_POLICY)
     expect(createSearchPolicy(null)).toEqual(DEFAULT_SEARCH_POLICY)
-    expect(createSearchPolicy({ fuzziness: 120, limit: 0, rankingThreshold: -1 })).toEqual({
-      fuzziness: 100,
+    expect(createSearchPolicy({ matchLevel: 9, limit: 0, rankingThreshold: -1 })).toEqual({
+      matchLevel: 4,
       limit: 1,
       rankingThreshold: 0,
     })
   })
 
-  it('interpolates from exact matching to the configured ranking threshold', () => {
-    expect(getEffectiveRankingThreshold({ fuzziness: 0, rankingThreshold: 0.8 })).toBe(1)
-    expect(getEffectiveRankingThreshold({ fuzziness: 50, rankingThreshold: 0.8 })).toBeCloseTo(0.9)
-    expect(getEffectiveRankingThreshold({ fuzziness: 100, rankingThreshold: 0.8 })).toBeCloseTo(0.8)
+  it('migrates legacy fuzziness values to the closest match level', () => {
+    expect(createSearchPolicy({ fuzziness: 0 })).toMatchObject({ matchLevel: 0 })
+    expect(createSearchPolicy({ fuzziness: 50 })).toMatchObject({ matchLevel: 2 })
+    expect(createSearchPolicy({ fuzziness: 100 })).toMatchObject({ matchLevel: 4 })
+  })
+
+  it('interpolates from exact matching to the configured ranking threshold for shared ranking fallbacks', () => {
+    expect(getEffectiveRankingThreshold({ matchLevel: 0, rankingThreshold: 0.8 })).toBe(1)
+    expect(getEffectiveRankingThreshold({ matchLevel: 2, rankingThreshold: 0.8 })).toBeCloseTo(0.9)
+    expect(getEffectiveRankingThreshold({ matchLevel: 4, rankingThreshold: 0.8 })).toBeCloseTo(0.8)
   })
 
   it('persists and restores a normalized policy', () => {
@@ -32,15 +38,15 @@ describe('search policy', () => {
       setItem: (key, value) => values.set(key, value),
     }
 
-    saveSearchPolicy({ fuzziness: 42, limit: 12, rankingThreshold: 0.8 }, storage)
+    saveSearchPolicy({ matchLevel: 3, limit: 12, rankingThreshold: 0.8 }, storage)
 
     expect(JSON.parse(values.get(SEARCH_POLICY_STORAGE_KEY))).toEqual({
-      fuzziness: 42,
+      matchLevel: 3,
       limit: 12,
       rankingThreshold: 0.8,
     })
     expect(loadSearchPolicy(storage)).toEqual({
-      fuzziness: 42,
+      matchLevel: 3,
       limit: 12,
       rankingThreshold: 0.8,
     })

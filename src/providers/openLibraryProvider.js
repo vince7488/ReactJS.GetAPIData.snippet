@@ -1,5 +1,5 @@
 import { defineProvider, PROVIDER_ERROR_CODES, ProviderError } from './providerContract'
-import { createSearchPolicy } from '../utils/searchPolicy'
+import { createSearchPolicy, getSearchPolicyBreadth } from '../utils/searchPolicy'
 
 const OPEN_LIBRARY_SEARCH_API = 'https://openlibrary.org/search.json'
 const OPEN_LIBRARY_FIELDS = ['key', 'title', 'author_name', 'first_publish_year', 'cover_i', 'edition_count', 'language'].join(',')
@@ -20,10 +20,11 @@ export function validateOpenLibraryQuery(query) {
 
 export function mapOpenLibrarySearchPolicy(searchPolicy) {
   const policy = createSearchPolicy(searchPolicy)
+  const breadth = getSearchPolicyBreadth(policy)
 
   return {
     strategy: 'full-text',
-    requestLimit: Math.min(100, Math.ceil(policy.limit * (1 + (2 * policy.fuzziness) / 100))),
+    requestLimit: Math.min(100, Math.ceil(policy.limit * (1 + 2 * breadth))),
   }
 }
 

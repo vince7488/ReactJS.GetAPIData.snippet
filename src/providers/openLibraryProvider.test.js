@@ -13,8 +13,8 @@ describe('Open Library provider', () => {
     expect(request.options.headers.Accept).toBe('application/json')
   })
 
-  it('widens the Open Library candidate pool as fuzziness increases', () => {
-    const request = buildOpenLibraryRequest('Tolkien', { fuzziness: 100, limit: 12, rankingThreshold: 0.8 })
+  it('widens the Open Library candidate pool as match level increases', () => {
+    const request = buildOpenLibraryRequest('Tolkien', { matchLevel: 4, limit: 12, rankingThreshold: 0.8 })
 
     expect(new URL(request.url).searchParams.get('limit')).toBe('36')
   })

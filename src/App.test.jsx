@@ -79,21 +79,21 @@ describe('App', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent("That GitHub username couldn't be found.")
   })
 
-  it('updates, persists, and applies the accessible fuzziness value', async () => {
+  it('updates, persists, and applies the accessible match level value', async () => {
     const user = userEvent.setup()
     searchProvider.mockResolvedValue([])
     const { unmount } = render(<App />)
-    const slider = screen.getByRole('slider', { name: 'Search fuzziness' })
+    const slider = screen.getByRole('slider', { name: 'Search match level' })
 
     expect(slider).toHaveValue('0')
-    expect(slider).toHaveAttribute('aria-valuetext', '0 out of 100, strict')
+    expect(slider).toHaveAttribute('aria-valuetext', 'Level 0 of 4, Strict: exact, case-insensitive matching')
 
-    fireEvent.change(slider, { target: { value: '65' } })
+    fireEvent.change(slider, { target: { value: '3' } })
 
-    expect(slider).toHaveValue('65')
-    expect(screen.getByText('65% fuzzy')).toBeInTheDocument()
+    expect(slider).toHaveValue('3')
+    expect(screen.getByText('Level 3: Semi-lenient')).toBeInTheDocument()
     expect(JSON.parse(localStorage.getItem(SEARCH_POLICY_STORAGE_KEY))).toEqual({
-      fuzziness: 65,
+      matchLevel: 3,
       limit: 12,
       rankingThreshold: 0.8,
     })
@@ -102,7 +102,7 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: 'Find GitHub user' }))
 
     expect(searchProvider).toHaveBeenCalledWith('github', 'vince7488', {
-      fuzziness: 65,
+      matchLevel: 3,
       limit: 12,
       rankingThreshold: 0.8,
     })
@@ -110,6 +110,6 @@ describe('App', () => {
     unmount()
     render(<App />)
 
-    expect(screen.getByRole('slider', { name: 'Search fuzziness' })).toHaveValue('65')
+    expect(screen.getByRole('slider', { name: 'Search match level' })).toHaveValue('3')
   })
 })

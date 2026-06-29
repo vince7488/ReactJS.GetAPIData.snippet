@@ -35,7 +35,8 @@ const requiredMethods = ['validateQuery', 'buildRequest', 'adaptResponse', 'getC
  *
  * Every adapter owns its UI copy, query validation, request construction,
  * provider-specific policy translation, response normalization, candidate
- * fields used by shared ranking, and user-facing error mapping.
+ * fields used by shared ranking, optional provider-owned ranking, optional
+ * result hydration, and user-facing error mapping.
  */
 export function defineProvider(provider) {
   for (const field of requiredTextFields) {
@@ -48,6 +49,14 @@ export function defineProvider(provider) {
     if (typeof provider[method] !== 'function') {
       throw new TypeError(`Provider "${method}" must be a function.`)
     }
+  }
+
+  if (provider.rankResults !== undefined && typeof provider.rankResults !== 'function') {
+    throw new TypeError('Provider "rankResults" must be a function when provided.')
+  }
+
+  if (provider.hydrateResults !== undefined && typeof provider.hydrateResults !== 'function') {
+    throw new TypeError('Provider "hydrateResults" must be a function when provided.')
   }
 
   return Object.freeze(provider)

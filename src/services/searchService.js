@@ -3,11 +3,7 @@ import { getProvider } from '../providers/registry'
 import { rankCandidates } from '../utils/searchRanking'
 import { createSearchPolicy } from '../utils/searchPolicy'
 
-async function fetchProviderData(provider, query, searchPolicy, fetchImplementation) {
-  const normalizedPolicy = createSearchPolicy(searchPolicy)
-  const validatedQuery = provider.validateQuery(query)
-  const request = provider.buildRequest(validatedQuery, normalizedPolicy)
-
+async function fetchRequest(request, fetchImplementation) {
   let response
 
   try {
@@ -28,23 +24,68 @@ async function fetchProviderData(provider, query, searchPolicy, fetchImplementat
     throw new ProviderError(PROVIDER_ERROR_CODES.invalidResponse, 'The provider response was not valid JSON.', { cause })
   }
 
+  return payload
+}
+
+async function fetchRequestPages(request, fetchImplementation) {
+  const payloads = []
+  const maxPages = Number.isFinite(request.maxPages) ? Math.max(1, request.maxPages) : 1
+  let currentRequest = request
+
+  for (let pageIndex = 0; currentRequest && pageIndex < maxPages; pageIndex += 1) {
+    const payload = await fetchRequest(currentRequest, fetchImplementation)
+    payloads.push(payload)
+    currentRequest =
+      typeof currentRequest.getNextRequest === 'function' ? currentRequest.getNextRequest(payload, currentRequest, pageIndex) : null
+  }
+
+  return payloads.length === 1 ? payloads[0] : payloads
+}
+
+async function fetchProviderData(provider, query, searchPolicy, fetchImplementation) {
+  const normalizedPolicy = createSearchPolicy(searchPolicy)
+  const validatedQuery = provider.validateQuery(query)
+  const request = provider.buildRequest(validatedQuery, normalizedPolicy)
+  const requests = Array.isArray(request) ? request : [request]
+  const payloads = await Promise.all(requests.map((providerRequest) => fetchRequestPages(providerRequest, fetchImplementation)))
+  const payload = Array.isArray(request) ? payloads : payloads[0]
+
   const results = provider.adaptResponse(payload, {
     query: validatedQuery,
     searchPolicy: normalizedPolicy,
     request,
+    requests,
   })
 
   if (!Array.isArray(results) || !results.every(isDisplayResult)) {
     throw new ProviderError(PROVIDER_ERROR_CODES.invalidResponse, 'The provider response could not be normalized.')
   }
 
-  const rankedResults = rankCandidates(validatedQuery, results, normalizedPolicy, provider.getCandidateFields)
+  const rankedResults = provider.rankResults
+    ? provider.rankResults(validatedQuery, results, normalizedPolicy)
+    : rankCandidates(validatedQuery, results, normalizedPolicy, provider.getCandidateFields)
 
   if (rankedResults.length === 0) {
     throw new ProviderError(PROVIDER_ERROR_CODES.noResults, 'The provider returned no results.')
   }
 
-  return rankedResults
+  if (!provider.hydrateResults) {
+    return rankedResults
+  }
+
+  const hydratedResults = await provider.hydrateResults(rankedResults, {
+    query: validatedQuery,
+    searchPolicy: normalizedPolicy,
+    fetchImplementation,
+    request,
+    requests,
+  })
+
+  if (!Array.isArray(hydratedResults) || !hydratedResults.every(isDisplayResult)) {
+    throw new ProviderError(PROVIDER_ERROR_CODES.invalidResponse, 'The provider hydrated results could not be normalized.')
+  }
+
+  return hydratedResults
 }
 
 export async function searchProvider(providerId, query, searchPolicy, fetchImplementation) {
