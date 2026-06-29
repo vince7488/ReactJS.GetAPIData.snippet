@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import ResultList from './ResultList'
 
@@ -30,6 +30,7 @@ describe('ResultList', () => {
   let triggerIntersection
 
   beforeEach(() => {
+    vi.useFakeTimers()
     triggerIntersection = undefined
     globalThis.IntersectionObserver = vi.fn(function IntersectionObserverMock(callback) {
       triggerIntersection = callback
@@ -42,6 +43,8 @@ describe('ResultList', () => {
   })
 
   afterEach(() => {
+    vi.clearAllTimers()
+    vi.useRealTimers()
     delete globalThis.IntersectionObserver
   })
 
@@ -53,7 +56,7 @@ describe('ResultList', () => {
     expect(screen.queryByLabelText(/virtualized/i)).not.toBeInTheDocument()
   })
 
-  it('progressively reveals GitHub results from six cards in groups of three', async () => {
+  it('progressively reveals GitHub results from six cards in groups of three', () => {
     render(
       <ResultList
         providerId='github'
@@ -67,25 +70,49 @@ describe('ResultList', () => {
     expect(screen.getByText('Result 6')).toBeInTheDocument()
     expect(screen.queryByText('Result 7')).not.toBeInTheDocument()
 
-    await waitFor(() => expect(globalThis.IntersectionObserver).toHaveBeenCalled())
+    expect(globalThis.IntersectionObserver).toHaveBeenCalled()
 
     act(() => {
       triggerIntersection([{ isIntersecting: true }])
     })
 
+    expect(screen.getByRole('status')).toHaveTextContent('loading more')
+    expect(screen.queryByText('Result 7')).not.toBeInTheDocument()
+
+    act(() => {
+      vi.advanceTimersByTime(299)
+    })
+
+    expect(screen.queryByText('Result 7')).not.toBeInTheDocument()
+
+    act(() => {
+      vi.advanceTimersByTime(1)
+    })
+
     expect(screen.getByText('12 results — showing 9; scroll to load 3 more')).toBeInTheDocument()
     expect(screen.getByText('Result 9')).toBeInTheDocument()
     expect(screen.queryByText('Result 10')).not.toBeInTheDocument()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+
+    act(() => {
+      triggerIntersection([{ isIntersecting: false }])
+    })
 
     act(() => {
       triggerIntersection([{ isIntersecting: true }])
+    })
+
+    expect(screen.getByRole('status')).toHaveTextContent('loading more')
+
+    act(() => {
+      vi.advanceTimersByTime(300)
     })
 
     expect(screen.getByText('12 results')).toBeInTheDocument()
     expect(screen.getByText('Result 12')).toBeInTheDocument()
   })
 
-  it('progressively reveals Open Library and PokéAPI sized result sets from nine cards in groups of six', async () => {
+  it('progressively reveals Open Library and PokéAPI sized result sets from nine cards in groups of six', () => {
     render(
       <ResultList
         providerId='open-library'
@@ -99,10 +126,17 @@ describe('ResultList', () => {
     expect(screen.getByText('Result 9')).toBeInTheDocument()
     expect(screen.queryByText('Result 10')).not.toBeInTheDocument()
 
-    await waitFor(() => expect(globalThis.IntersectionObserver).toHaveBeenCalled())
+    expect(globalThis.IntersectionObserver).toHaveBeenCalled()
 
     act(() => {
       triggerIntersection([{ isIntersecting: true }])
+    })
+
+    expect(screen.getByRole('status')).toHaveTextContent('loading more')
+    expect(screen.queryByText('Result 10')).not.toBeInTheDocument()
+
+    act(() => {
+      vi.advanceTimersByTime(300)
     })
 
     expect(screen.getByText('52 results — showing 15; scroll to load 6 more')).toBeInTheDocument()
