@@ -13,10 +13,10 @@ describe('result display policy', () => {
 
   it('uses the larger Open Library and PokéAPI display cap', () => {
     expect(getResultDisplayPolicy('open-library')).toEqual({
-      searchLimit: 52,
+      searchLimit: 54,
       initialVisibleCount: 9,
       revealIncrement: 6,
-      maxVisibleCount: 52,
+      maxVisibleCount: 54,
     })
     expect(getResultDisplayPolicy('pokeapi')).toEqual(getResultDisplayPolicy('open-library'))
   })

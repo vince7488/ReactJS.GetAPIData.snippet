@@ -94,7 +94,7 @@ results. Makes me think fuzzy is overrated. Each provider maps the five levels t
 - Level 4: lenient
 
 Result display caps are provider-specific: GitHub searches up to 12 results and reveals 6 cards first, then 3 more at a time. Open
-Library and PokéAPI search up to 52 results and reveal 9 cards first, then 6 more at a time.
+Library and PokéAPI search up to 54 results and reveal 9 cards first, then 6 more at a time.
 
 ## API Notes
 
