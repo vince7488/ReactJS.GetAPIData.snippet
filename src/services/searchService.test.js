@@ -190,40 +190,15 @@ describe('searchProvider', () => {
     )
   })
 
-  it('maps empty PokéAPI deep hydration results through the selected provider', async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        json: vi.fn().mockResolvedValue({
-          results: [{ name: 'caterpie', url: 'https://pokeapi.co/api/v2/pokemon/10/' }],
-        }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: vi.fn().mockResolvedValue({
-          id: 10,
-          name: 'caterpie',
-          species: { url: 'https://pokeapi.co/api/v2/pokemon-species/10/' },
-          types: [{ type: { name: 'bug' } }],
-          abilities: [],
-          sprites: {},
-        }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: vi.fn().mockResolvedValue({
-          evolution_chain: { url: 'https://pokeapi.co/api/v2/evolution-chain/4/' },
-        }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: vi.fn().mockResolvedValue({
-          chain: { species: { name: 'caterpie' }, evolves_to: [] },
-        }),
-      })
+  it('maps empty PokéAPI level 4 name and number results through the selected provider', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      json: vi.fn().mockResolvedValue({
+        results: [{ name: 'caterpie', url: 'https://pokeapi.co/api/v2/pokemon/10/' }],
+      }),
+    })
 
-    await expect(searchProvider('pokeapi', 'pik', { matchLevel: 4, limit: 12, rankingThreshold: 0.8 }, fetchMock)).rejects.toThrow(
+    await expect(searchProvider('pokeapi', 'zz', { matchLevel: 4, limit: 12, rankingThreshold: 0.8 }, fetchMock)).rejects.toThrow(
       "That Pokémon couldn't be found.",
     )
   })

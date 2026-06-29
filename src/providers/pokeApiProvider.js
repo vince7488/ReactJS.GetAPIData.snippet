@@ -3,7 +3,6 @@ import { createSearchPolicy } from '../utils/searchPolicy'
 
 const POKE_API = 'https://pokeapi.co/api/v2/pokemon'
 const POKE_API_CATALOG_LIMIT = 100000
-const POKE_API_DEEP_SCAN_BATCH_SIZE = 20
 const POKEMON_ALPHA_QUERY_PATTERN = /^[a-z]+$/i
 const POKEMON_NUMBER_QUERY_PATTERN = /^\d+$/
 
@@ -168,7 +167,10 @@ function scorePokeApiValue(query, value, matchLevel) {
   const containsQuery = normalizedValue.includes(normalizedQuery)
   const startsWithQuery = normalizedValue.startsWith(normalizedQuery)
   const queryCharacters = getSearchCharacters(normalizedQuery)
+  const matchedCharacterCount = queryCharacters.filter((character) => normalizedValue.includes(character)).length
   const hasAllCharacters = queryCharacters.every((character) => normalizedValue.includes(character))
+  const minimumLenientCharacterCount = queryCharacters.length >= 3 ? 2 : queryCharacters.length
+  const hasEnoughLenientCharacters = matchedCharacterCount >= minimumLenientCharacterCount
 
   if (matchLevel === 1 && !startsWithQuery) {
     return null
@@ -179,6 +181,10 @@ function scorePokeApiValue(query, value, matchLevel) {
   }
 
   if (matchLevel === 3 && !hasAllCharacters) {
+    return null
+  }
+
+  if (matchLevel === 4 && !hasEnoughLenientCharacters) {
     return null
   }
 
@@ -194,6 +200,10 @@ function scorePokeApiValue(query, value, matchLevel) {
     return 60 - normalizedValue.indexOf(normalizedQuery) / 100 - normalizedValue.length / 1000
   }
 
+  if (hasAllCharacters) {
+    return 40 - normalizedValue.length / 1000
+  }
+
   return 40 - normalizedValue.length / 1000
 }
 
@@ -207,10 +217,6 @@ function scorePokeApiResult(query, result, matchLevel) {
 
 export function rankPokeApiResults(query, results, searchPolicy) {
   const policy = createSearchPolicy(searchPolicy)
-
-  if (policy.matchLevel === 4) {
-    return results
-  }
 
   return results
     .map((result, index) => ({
@@ -244,98 +250,22 @@ async function fetchPokeApiJson(url, fetchImplementation) {
   }
 }
 
-async function fetchCachedPokeApiJson(url, fetchImplementation, cache) {
-  if (!url) {
-    return null
-  }
-
-  if (!cache.has(url)) {
-    cache.set(url, fetchPokeApiJson(url, fetchImplementation))
-  }
-
-  return cache.get(url)
-}
-
 async function hydratePokeApiCatalogResult(result, fetchImplementation) {
   if (!isPokeApiCatalogResult(result)) {
-    return {
-      result,
-      pokemon: null,
-      deepPayload: null,
-    }
+    return result
   }
 
   const pokemon = await fetchPokeApiJson(result.externalUrl, fetchImplementation)
 
-  return {
-    result: adaptPokeApiPokemon(pokemon),
-    pokemon,
-    deepPayload: {
-      pokemon,
-    },
-  }
-}
-
-async function hydratePokeApiDeepPayload(hydratedCandidate, fetchImplementation, cache) {
-  if (!hydratedCandidate.pokemon) {
-    return hydratedCandidate
-  }
-
-  const species = await fetchCachedPokeApiJson(hydratedCandidate.pokemon.species?.url, fetchImplementation, cache)
-  const evolutionChain = await fetchCachedPokeApiJson(species?.evolution_chain?.url, fetchImplementation, cache)
-
-  return {
-    ...hydratedCandidate,
-    deepPayload: {
-      pokemon: hydratedCandidate.pokemon,
-      species,
-      evolutionChain,
-    },
-  }
-}
-
-function matchesPokeApiDeepPayload(query, deepPayload) {
-  return JSON.stringify(deepPayload ?? {})
-    .toLowerCase()
-    .includes(query.toLowerCase())
+  return adaptPokeApiPokemon(pokemon)
 }
 
 async function hydratePokeApiStandardResults(results, fetchImplementation) {
-  const hydratedCandidates = await Promise.all(results.map((result) => hydratePokeApiCatalogResult(result, fetchImplementation)))
-
-  return hydratedCandidates.map(({ result }) => result)
+  return Promise.all(results.map((result) => hydratePokeApiCatalogResult(result, fetchImplementation)))
 }
 
-export async function hydratePokeApiResults(results, { query, searchPolicy, fetchImplementation }) {
-  const policy = createSearchPolicy(searchPolicy)
-
-  if (policy.matchLevel !== 4) {
-    return hydratePokeApiStandardResults(results, fetchImplementation)
-  }
-
-  const matches = []
-  const cache = new Map()
-
-  for (let index = 0; index < results.length && matches.length < policy.limit; index += POKE_API_DEEP_SCAN_BATCH_SIZE) {
-    const batch = results.slice(index, index + POKE_API_DEEP_SCAN_BATCH_SIZE)
-    const hydratedCandidates = await Promise.all(
-      batch.map(async (result) =>
-        hydratePokeApiDeepPayload(await hydratePokeApiCatalogResult(result, fetchImplementation), fetchImplementation, cache),
-      ),
-    )
-
-    for (const candidate of hydratedCandidates) {
-      if (matchesPokeApiDeepPayload(query, candidate.deepPayload)) {
-        matches.push(candidate.result)
-      }
-
-      if (matches.length >= policy.limit) {
-        break
-      }
-    }
-  }
-
-  return matches
+export async function hydratePokeApiResults(results, { fetchImplementation }) {
+  return hydratePokeApiStandardResults(results, fetchImplementation)
 }
 
 export function mapPokeApiError(error) {

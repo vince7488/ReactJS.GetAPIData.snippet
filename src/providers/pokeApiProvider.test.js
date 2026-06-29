@@ -106,16 +106,23 @@ describe('PokéAPI provider', () => {
       results: [
         { name: 'pikachu', url: 'https://pokeapi.co/api/v2/pokemon/25/' },
         { name: 'raichu', url: 'https://pokeapi.co/api/v2/pokemon/26/' },
+        { name: 'pichu', url: 'https://pokeapi.co/api/v2/pokemon/172/' },
         { name: 'charmander', url: 'https://pokeapi.co/api/v2/pokemon/4/' },
       ],
     })
 
     expect(
-      rankPokeApiResults('pi', candidates, { matchLevel: 1, limit: 12, rankingThreshold: 0.8 }).map(({ title }) => title),
+      rankPokeApiResults('pika', candidates, { matchLevel: 1, limit: 12, rankingThreshold: 0.8 }).map(({ title }) => title),
     ).toEqual(['Pikachu'])
     expect(
       rankPokeApiResults('26', candidates, { matchLevel: 0, limit: 12, rankingThreshold: 0.8 }).map(({ title }) => title),
     ).toEqual(['Raichu'])
+    expect(
+      rankPokeApiResults('pikachu', candidates, { matchLevel: 3, limit: 12, rankingThreshold: 0.8 }).map(({ title }) => title),
+    ).toEqual(['Pikachu'])
+    expect(
+      rankPokeApiResults('25', candidates, { matchLevel: 3, limit: 12, rankingThreshold: 0.8 }).map(({ title }) => title),
+    ).toEqual(['Pikachu'])
   })
 
   it('hydrates ranked catalog results into full Pokémon cards', async () => {
@@ -137,43 +144,20 @@ describe('PokéAPI provider', () => {
     expect(result.metadata).toContainEqual({ label: 'Types', value: 'Electric' })
   })
 
-  it('searches deep Pokémon, species, and evolution-chain payloads at level 4', async () => {
+  it('applies level 4 matching to Pokémon names and Pokédex numbers only', () => {
     const candidates = adaptPokeApiResponse({
       results: [
         { name: 'pikachu', url: 'https://pokeapi.co/api/v2/pokemon/25/' },
         { name: 'raichu', url: 'https://pokeapi.co/api/v2/pokemon/26/' },
+        { name: 'pichu', url: 'https://pokeapi.co/api/v2/pokemon/172/' },
         { name: 'caterpie', url: 'https://pokeapi.co/api/v2/pokemon/10/' },
       ],
     })
-    const payloads = new Map([
-      ['https://pokeapi.co/api/v2/pokemon/25/', createPokemonDetail(25, 'pikachu', 'https://pokeapi.co/api/v2/pokemon-species/25/')],
-      ['https://pokeapi.co/api/v2/pokemon/26/', createPokemonDetail(26, 'raichu', 'https://pokeapi.co/api/v2/pokemon-species/26/')],
-      [
-        'https://pokeapi.co/api/v2/pokemon/10/',
-        createPokemonDetail(10, 'caterpie', 'https://pokeapi.co/api/v2/pokemon-species/10/', 'bug'),
-      ],
-      ['https://pokeapi.co/api/v2/pokemon-species/25/', { evolution_chain: { url: 'https://pokeapi.co/api/v2/evolution-chain/10/' } }],
-      ['https://pokeapi.co/api/v2/pokemon-species/26/', { evolution_chain: { url: 'https://pokeapi.co/api/v2/evolution-chain/10/' } }],
-      ['https://pokeapi.co/api/v2/pokemon-species/10/', { evolution_chain: { url: 'https://pokeapi.co/api/v2/evolution-chain/4/' } }],
-      [
-        'https://pokeapi.co/api/v2/evolution-chain/10/',
-        {
-          chain: {
-            species: { name: 'pichu' },
-            evolves_to: [{ species: { name: 'pikachu' }, evolves_to: [{ species: { name: 'raichu' } }] }],
-          },
-        },
-      ],
-      ['https://pokeapi.co/api/v2/evolution-chain/4/', { chain: { species: { name: 'caterpie' }, evolves_to: [] } }],
-    ])
-    const fetchMock = vi.fn((url) => Promise.resolve(createJsonResponse(payloads.get(url))))
 
-    const results = await hydratePokeApiResults(candidates, {
-      query: 'pik',
-      searchPolicy: { matchLevel: 4, limit: 12, rankingThreshold: 0.8 },
-      fetchImplementation: fetchMock,
-    })
+    const results = rankPokeApiResults('pik', candidates, { matchLevel: 4, limit: 12, rankingThreshold: 0.8 })
+    const titles = results.map(({ title }) => title)
 
-    expect(results.map(({ title }) => title)).toEqual(['Pikachu', 'Raichu'])
+    expect(titles).toEqual(expect.arrayContaining(['Pikachu', 'Pichu', 'Caterpie']))
+    expect(titles).not.toContain('Raichu')
   })
 })
