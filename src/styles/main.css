@@ -144,6 +144,35 @@ select {
   height: 1px;
 }
 
+.load-more-indicator {
+  display: flex;
+  min-height: 3rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: #0d6efd;
+  font-size: 1.125rem;
+  font-weight: 700;
+  animation: load-more-pulse 1000ms ease-in-out infinite;
+}
+
+.load-more-indicator .spinner-border {
+  width: 1.1rem;
+  height: 1.1rem;
+  border-width: 0.16em;
+}
+
+@keyframes load-more-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
 .masonry-grid {
   width: 100%;
   outline: none;
@@ -245,6 +274,20 @@ select {
   font-size: 0.9rem;
   font-weight: 600;
   overflow-wrap: anywhere;
+}
+
+@media (max-width: 1280px) {
+  .search-form .input-group > .form-control,
+  .search-form .input-group > .form-floating,
+  .search-form .input-group > .form-select {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .load-more-indicator {
+    animation: none;
+  }
 }
 
 @media (max-width: 767.98px) {

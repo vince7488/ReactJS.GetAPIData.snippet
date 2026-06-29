@@ -1,5 +1,7 @@
-import { defineProvider, PROVIDER_ERROR_CODES, ProviderError } from './providerContract'
-import { createSearchPolicy } from '../utils/searchPolicy'
+import {defineProvider, PROVIDER_ERROR_CODES, ProviderError} from './providerContract'
+import {createSearchPolicy} from '../utils/searchPolicy'
+
+/* Provides access to Pokémon data from the PokéAPI (https://pokeapi.co/). */
 
 const POKE_API = 'https://pokeapi.co/api/v2/pokemon'
 const POKE_API_CATALOG_LIMIT = 100000
@@ -72,8 +74,8 @@ export function buildPokeApiRequest(searchTerm, searchPolicy) {
 function adaptPokeApiPokemon(pokemon) {
   const name = pokemon.name || 'unknown-pokemon'
   const displayName = toDisplayName(name)
-  const types = Array.isArray(pokemon.types) ? pokemon.types.map(({ type }) => toDisplayName(type.name)) : []
-  const abilities = Array.isArray(pokemon.abilities) ? pokemon.abilities.map(({ ability }) => toDisplayName(ability.name)) : []
+  const types = Array.isArray(pokemon.types) ? pokemon.types.map(({type}) => toDisplayName(type.name)) : []
+  const abilities = Array.isArray(pokemon.abilities) ? pokemon.abilities.map(({ability}) => toDisplayName(ability.name)) : []
   const typeDescription = types.length > 0 ? types.join(' / ') : 'Unknown type'
 
   return {
@@ -84,7 +86,7 @@ function adaptPokeApiPokemon(pokemon) {
     imageUrl: pokemon.sprites?.other?.['official-artwork']?.front_default || pokemon.sprites?.front_default || null,
     externalUrl: pokemon.id ? `${POKE_API}/${pokemon.id}/` : `${POKE_API}/${encodeURIComponent(name)}/`,
     metadata: [
-      { label: 'Types', value: typeDescription },
+      {label: 'Types', value: typeDescription},
       {
         label: 'Height',
         value: typeof pokemon.height === 'number' ? `${pokemon.height / 10} m` : 'Not listed',
@@ -118,8 +120,8 @@ function adaptPokeApiCatalogEntry(pokemon) {
     imageUrl: id ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png` : null,
     externalUrl: pokemon.url || `${POKE_API}/${encodeURIComponent(name)}/`,
     metadata: [
-      { label: 'Match source', value: 'Pokémon name catalog' },
-      { label: 'Details', value: 'Available from PokéAPI' },
+      {label: 'Match source', value: 'Pokémon name catalog'},
+      {label: 'Details', value: 'Available from PokéAPI'},
     ],
   }
 }
@@ -224,10 +226,10 @@ export function rankPokeApiResults(query, results, searchPolicy) {
       index,
       score: scorePokeApiResult(query, result, policy.matchLevel),
     }))
-    .filter(({ score }) => Number.isFinite(score))
+    .filter(({score}) => Number.isFinite(score))
     .sort((left, right) => right.score - left.score || left.index - right.index)
     .slice(0, policy.limit)
-    .map(({ result }) => result)
+    .map(({result}) => result)
 }
 
 async function fetchPokeApiJson(url, fetchImplementation) {
@@ -236,17 +238,17 @@ async function fetchPokeApiJson(url, fetchImplementation) {
   try {
     response = await fetchImplementation(url, buildPokeApiJsonRequest(url).options)
   } catch (cause) {
-    throw new ProviderError(PROVIDER_ERROR_CODES.network, 'The PokéAPI detail request failed.', { cause })
+    throw new ProviderError(PROVIDER_ERROR_CODES.network, 'The PokéAPI detail request failed.', {cause})
   }
 
   if (!response.ok) {
-    throw new ProviderError(PROVIDER_ERROR_CODES.http, `PokéAPI returned HTTP ${response.status}.`, { status: response.status })
+    throw new ProviderError(PROVIDER_ERROR_CODES.http, `PokéAPI returned HTTP ${response.status}.`, {status: response.status})
   }
 
   try {
     return await response.json()
   } catch (cause) {
-    throw new ProviderError(PROVIDER_ERROR_CODES.invalidResponse, 'The PokéAPI detail response was not valid JSON.', { cause })
+    throw new ProviderError(PROVIDER_ERROR_CODES.invalidResponse, 'The PokéAPI detail response was not valid JSON.', {cause})
   }
 }
 
@@ -264,7 +266,7 @@ async function hydratePokeApiStandardResults(results, fetchImplementation) {
   return Promise.all(results.map((result) => hydratePokeApiCatalogResult(result, fetchImplementation)))
 }
 
-export async function hydratePokeApiResults(results, { fetchImplementation }) {
+export async function hydratePokeApiResults(results, {fetchImplementation}) {
   return hydratePokeApiStandardResults(results, fetchImplementation)
 }
 

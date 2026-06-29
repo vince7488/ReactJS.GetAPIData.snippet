@@ -1,5 +1,7 @@
-import { defineProvider, PROVIDER_ERROR_CODES, ProviderError } from './providerContract'
-import { createSearchPolicy, getSearchPolicyBreadth } from '../utils/searchPolicy'
+import {defineProvider, PROVIDER_ERROR_CODES, ProviderError} from './providerContract'
+import {createSearchPolicy, getSearchPolicyBreadth} from '../utils/searchPolicy'
+
+/* Generates a provider for searching books using the Open Library API. */
 
 const OPEN_LIBRARY_SEARCH_API = 'https://openlibrary.org/search.json'
 const OPEN_LIBRARY_FIELDS = [
@@ -98,7 +100,7 @@ export function adaptOpenLibraryResponse(payload) {
       imageUrl: book.cover_i ? `https://covers.openlibrary.org/b/id/${book.cover_i}-M.jpg` : null,
       externalUrl: getWorkUrl(book.key),
       metadata: [
-        { label: 'First published', value: firstPublished },
+        {label: 'First published', value: firstPublished},
         {
           label: 'Editions',
           value: String(book.edition_count ?? 'Not listed'),
@@ -273,10 +275,10 @@ export function rankOpenLibraryResults(query, results, searchPolicy) {
         editionCount: searchData.editionCount,
       }
     })
-    .filter(({ score }) => score !== null)
+    .filter(({score}) => score !== null)
     .sort((left, right) => right.score - left.score || right.editionCount - left.editionCount || left.index - right.index)
     .slice(0, policy.limit)
-    .map(({ result }) => result)
+    .map(({result}) => result)
 }
 
 export function mapOpenLibraryError(error) {
