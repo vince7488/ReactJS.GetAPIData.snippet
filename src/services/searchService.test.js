@@ -34,22 +34,27 @@ describe('searchProvider', () => {
     )
   })
 
-  it('applies shared ranking and result limits after provider adaptation', async () => {
+  it('applies provider-owned Open Library ranking and result limits after adaptation', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: vi.fn().mockResolvedValue({
         docs: [
-          { key: '/works/1', title: 'Pikachu' },
-          { key: '/works/2', title: 'Pikchu' },
-          { key: '/works/3', title: 'Bulbasaur' },
+          { key: '/works/1', title: 'The Hobbit', author_name: ['J. R. R. Tolkien'], edition_count: 120 },
+          { key: '/works/2', title: 'The Annotated Hobbit', author_name: ['J. R. R. Tolkien'], edition_count: 12 },
+          { key: '/works/3', title: 'Frankenstein', author_name: ['Mary Shelley'], edition_count: 140 },
         ],
       }),
     })
 
-    const results = await searchProvider('open-library', 'pikchu', { matchLevel: 4, limit: 1, rankingThreshold: 0.8 }, fetchMock)
+    const results = await searchProvider(
+      'open-library',
+      'annotated hobbit',
+      { matchLevel: 2, limit: 1, rankingThreshold: 0.8 },
+      fetchMock,
+    )
 
     expect(results).toHaveLength(1)
-    expect(results[0].title).toBe('Pikchu')
+    expect(results[0].title).toBe('The Annotated Hobbit')
   })
 
   it('supports provider adapters that capture candidates with bounded pagination', async () => {
