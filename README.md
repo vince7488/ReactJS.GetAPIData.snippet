@@ -36,16 +36,29 @@ Vite prints the local development URL when the server starts.
 
 ## Scripts
 
-| Command                | Purpose                                 |
-| ---------------------- | --------------------------------------- |
-| `npm run dev`          | Start the Vite development server       |
-| `npm run build`        | Create a production build in `dist/`    |
-| `npm run preview`      | Preview the production build locally    |
-| `npm run lint`         | Run ESLint                              |
-| `npm run format`       | Format supported files with Prettier    |
-| `npm run format:check` | Check formatting without changing files |
-| `npm test`             | Run the Vitest test suite once          |
-| `npm run test:watch`   | Run Vitest in watch mode                |
+| Command                 | Purpose                                 |
+| ----------------------- | --------------------------------------- |
+| `npm run dev`           | Start the Vite development server       |
+| `npm run build`         | Create a production build in `dist/`    |
+| `npm run preview`       | Preview the production build locally    |
+| `npm run lint`          | Run ESLint                              |
+| `npm run format`        | Format supported files with Prettier    |
+| `npm run format:check`  | Check formatting without changing files |
+| `npm test`              | Run the Vitest test suite once          |
+| `npm run test:coverage` | Run Vitest with V8 coverage output      |
+| `npm run test:e2e`      | Run Playwright end-to-end tests         |
+| `npm run test:e2e:live` | Run optional live API smoke tests       |
+| `npm run test:watch`    | Run Vitest in watch mode                |
+
+## Test Strategy
+
+- Provider contract tests verify every registered adapter exposes the required fields, request builders, response adapters, ranking,
+  hydration, candidate fields, and error mapping.
+- Provider integration tests exercise `searchProvider` against mocked GitHub, Open Library, and PokéAPI payloads.
+- Playwright end-to-end tests run against the production preview and mock third-party API hosts, so normal CI does not depend on live
+  public APIs.
+- Optional live API smoke checks are isolated in a separate scheduled/manual workflow and are allowed to fail without blocking normal
+  CI.
 
 ## Provider Contract
 
