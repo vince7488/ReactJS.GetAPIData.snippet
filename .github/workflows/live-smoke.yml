@@ -37,7 +37,7 @@ jobs:
 
       - name: Upload live smoke Playwright report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: live-smoke-playwright-report
           path: playwright-report
@@ -45,7 +45,7 @@ jobs:
 
       - name: Upload live smoke test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: live-smoke-test-results
           path: test-results
