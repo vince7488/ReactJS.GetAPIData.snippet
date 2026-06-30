@@ -1,0 +1,1 @@
+export { searchProvider } from './searchService'

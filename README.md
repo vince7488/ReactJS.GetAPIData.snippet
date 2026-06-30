@@ -1,72 +1,137 @@
-![ReactJS Logo. Subjected to Copyright. Facebook Inc. From Wikimedia.org](https://upload.wikimedia.org/wikipedia/commons/a/a7/React-icon.svg)
+# API Search Playground
 
-# ReactJS.GetAPIData.snippet
-*Use an API data and output API data into Bootstrap4 cards.*
+A provider-driven React application for searching GitHub, Open Library, and PokéAPI through one shared interface.
 
-version: 0.0.134
+The project was originally built with React 16, Webpack 4, Express, Axios, React Bootstrap, and LESS css. I've updated and it now uses
+current React, Vite, Bootstrap, the browser Fetch API, ESLint, Prettier, and Vitest. Provider adapters isolate API request and response
+details from the presentation components.
 
-Author: **[Vernard Mercader](http://vernard.net)**
+_\*Intentionally kept in React JSX (and not TypeScript) to showcase ability to be versatile with JSX (I do love TypeScript better,
+though.)_
 
-Credit: **[Samer Buna](http://edgecoders.com)**
+## Features
 
-Live: http://vmdataserv.com/react-apidata/
+- Select to try out GitHub API, Open Library API, or PokéAPI from a drop down control.
+- Tune the search string matching with a slider from "strict" to "lenient". This adjusts how exactly you want your query to match the
+  results.
+- You can clear the current query and rendered results from the search form.
+- Normalize every API response into one shared result-card model.
+- Keeps request construction, response adaptation, validation, ranking, hydration, and error mapping inside each provider adapter.
+- Display results as `masonic`-backed virtualized masonry cards with page-scroll progressive reveal instead of a fixed-height result
+  scroller.
 
-Keywords: React,Express,Node,Webpack,Babel,Axios,Bootstrap4
+## Requirements
 
-I'm going to build an environment using NodeJS, Express and Webpack, then React-away from there. The goal for this small react Module is to use a simple Method that grabs API AJAX data and output an API "Document" as a card containing information to a specific unique key.  I'll be using [Bootstrap4](https://getbootstrap.com/docs/4.0/getting-started/introduction/) framework—through react—designing the UI, and the API will be from [GitHub](https://api.github.com).  The module is simple: it consists of a textbox and a submit button that will accept a valid GitHub username (and **displays an error alert** If the user name is invalid), and on user execution, it will display a rectangular card containing the GitHub User's Profile Name, Profile Company, Link to the GitHub Profile, and their Avatar Image.
+- Node.js 20.19 or newer
+- npm
 
-## Init:
+## Setup
 
-To start the project in Node:
+```bash
+npm install
+npm run dev
+```
 
-    npm -y init
+Vite prints the local development URL when the server starts.
 
-Install necessities
+## Scripts
 
-1. `npm install --save express react react-dom`
-2. `npm install --save-dev webpack webpack-cli babel-loader @babel/core @babel/preset-react @babel/plugin-proposal-class-properties html-webpack-plugin`
+| Command                 | Purpose                                 |
+| ----------------------- | --------------------------------------- |
+| `npm run dev`           | Start the Vite development server       |
+| `npm run build`         | Create a production build in `dist/`    |
+| `npm run preview`       | Preview the production build locally    |
+| `npm run lint`          | Run ESLint                              |
+| `npm run format`        | Format supported files with Prettier    |
+| `npm run format:check`  | Check formatting without changing files |
+| `npm test`              | Run the Vitest test suite once          |
+| `npm run test:coverage` | Run Vitest with V8 coverage output      |
+| `npm run test:e2e`      | Run Playwright end-to-end tests         |
+| `npm run test:e2e:live` | Run optional live API smoke tests       |
+| `npm run test:watch`    | Run Vitest in watch mode                |
 
-After initialisation, creating the entry point (start.js (*others like it app.js*))
+## Test Strategy
 
-Additionally, run the following:
+- Provider contract tests verify every registered adapter exposes the required fields, request builders, response adapters, ranking,
+  hydration, candidate fields, and error mapping.
+- Provider integration tests exercise `searchProvider` against mocked GitHub, Open Library, and PokéAPI payloads.
+- Playwright end-to-end tests run against the production preview and mock third-party API hosts, so normal CI does not depend on live
+  public APIs.
+- Optional live API smoke checks are isolated in a separate scheduled/manual workflow and are allowed to fail without blocking normal
+  CI.
 
-* `npm i --save-dev clean-webpack-plugin`
-* `npm install jquery`
-* `npm install --save-dev jquery popper.js`
-* `npm install bootstrap`
-* `npm i --save-dev react-bootstrap`
-* `npm install less`
-* `npm i --save-dev less-loader`
-* `npm i --save-dev css-loader style-loader postcss-loader`
-* `npm i --save-dev autoprefixer cssnano`
-* `npm i --save-dev mini-css-extract-plugin`
-* `npm i --save-dev less-plugin-clean-css`
-* `npm i --save-dev file-loader`
-* `npm i --save-dev terser-webpack-plugin`
-* `npm i --save-dev axios`
+## Provider Contract
 
-##Running the Module
+Each provider adapter supplies:
 
-To compile the build, run 
+- Provider name, description, labels, placeholder, example, and link copy
+- `validateQuery(query)`
+- `buildRequest(validatedQuery, searchPolicy)`
+- `adaptResponse(payload, context)`
+- `getCandidateFields(result)`
+- `mapError(error)`
 
-    npm run build
+Providers can also supply optional hooks:
 
-or
+- `rankResults(query, results, searchPolicy)`
+- `hydrateResults(results, context)`
 
-    npx webpack
+Adapters return an array of normalized results with:
 
-To preview the build using a Localhost server, run
+```text
+id, title, subtitle, description, imageUrl, externalUrl, metadata
+```
 
-    node start.js
+Adding another provider requires registering one adapter in `src/providers/registry.js`; presentation components do not need
+provider-specific branches.
 
-## Previews
+## Search Policy
 
-![Screenshot 1](https://i.ibb.co/rfcGLSy/snap1.jpg) ![Screenshot 2](https://i.ibb.co/2v8XbNY/snap2.jpg) ![Screenshot 3](https://i.ibb.co/FmWBxZJ/snap3.jpg) ![Screenshot 4](https://i.ibb.co/PmY5Vzd/snap4.jpg)
+The shared search policy is provider-independent:
 
-### What else can I do? 
+```js
+{
+  matchLevel: 0, // 0 strict → 4 lenient
+  limit: 12,
+  rankingThreshold: 0.8
+}
+```
 
-Maybe in later a version, I can:
+The match slider is intentionally not a universal fuzzy-search algorithm. At first I did want fuzzy, but I wasn't satisfied with the
+results. Makes me think fuzzy is overrated. Each provider maps the five levels to behavior that fits its API surface:
 
-* Add Transitions/Animations
-* Selectively remove a card from the display
-* remove all cards button (reset)
+- Level 0: strict
+- Level 1: semi-strict
+- Level 2: median
+- Level 3: semi-lenient
+- Level 4: lenient
+
+Result display caps are provider-specific: GitHub searches up to 12 results and reveals 6 cards first, then 3 more at a time. Open
+Library and PokéAPI search up to 54 results and reveal 9 cards first, then 6 more at a time.
+
+## API Notes
+
+The app calls each public API directly from the browser without credentials. Provider availability and unauthenticated rate limits
+still apply:
+
+### GitHub API
+
+- GitHub requires at least two characters (alphanumeric), searches public users by provider-specific match level.
+- Only searches within the `username` value.
+- Hydrates displayed results through `GET /users/:login` so company, location, repository, and follower metadata are complete.
+- Broader levels can consume GitHub rate limits quickly.
+
+### Open Library API
+
+- Open Library searches books with provider-owned title, author, and alternate-title ranking: exact title, title prefix, unordered
+  title tokens, title-and-author matching, then lenient token coverage.
+
+### PokéAPI
+
+- PokéAPI accepts letter-only queries of two or more characters, or number-only Pokédex queries of one or more digits. Mixed
+  alphanumeric queries such as `ra1chu` are rejected. Broader levels use the Pokémon catalog, hydrate displayed Pokémon records, and
+  level 4 applies the lenient matching rule to Pokémon names and Pokédex numbers.
+
+## Yours truly
+
+Created by [Vernard Mercader](http://vernard.net)
