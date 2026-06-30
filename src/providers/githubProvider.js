@@ -1,5 +1,5 @@
-import {defineProvider, PROVIDER_ERROR_CODES, ProviderError} from './providerContract'
-import {createSearchPolicy} from '../utils/searchPolicy'
+import { defineProvider, PROVIDER_ERROR_CODES, ProviderError } from './providerContract'
+import { createSearchPolicy } from '../utils/searchPolicy'
 
 /* The classic. The first one. This provider is the original inspiration for the entire project. It was built to demonstrate how to implement a provider and to serve as a reference for other providers. */
 // Grabs the information from the GitHub API and adapts it to the provider contract. It supports searching for users by username, hydrating user profiles with additional metadata, and ranking results based on match levels.
@@ -154,8 +154,8 @@ function adaptGitHubUser(profile) {
     imageUrl: profile.avatar_url || `https://github.com/identicons/${encodeURIComponent(login)}.png`,
     externalUrl: profile.html_url || `https://github.com/${login}`,
     metadata: [
-      {label: 'Company', value: profile.company || (isSearchCandidate ? 'Not loaded' : 'Not listed')},
-      {label: 'Location', value: profile.location || (isSearchCandidate ? 'Not loaded' : 'Not listed')},
+      { label: 'Company', value: profile.company || (isSearchCandidate ? 'Not loaded' : 'Not listed') },
+      { label: 'Location', value: profile.location || (isSearchCandidate ? 'Not loaded' : 'Not listed') },
       {
         label: 'Repositories',
         value: profile.public_repos === undefined && isSearchCandidate ? 'Not loaded' : String(profile.public_repos ?? 0),
@@ -260,10 +260,10 @@ export function rankGitHubResults(query, results, searchPolicy) {
       index,
       score: scoreGitHubLogin(query, getGitHubLogin(result), policy.matchLevel),
     }))
-    .filter(({score}) => score !== null)
+    .filter(({ score }) => score !== null)
     .sort((left, right) => right.score - left.score || left.index - right.index)
     .slice(0, policy.limit)
-    .map(({result}) => result)
+    .map(({ result }) => result)
 }
 
 function hasUnloadedGitHubMetadata(result) {
@@ -281,7 +281,7 @@ async function hydrateGitHubResult(result, fetchImplementation) {
   try {
     response = await fetchImplementation(request.url, request.options)
   } catch (cause) {
-    throw new ProviderError(PROVIDER_ERROR_CODES.network, 'GitHub profile hydration request failed.', {cause})
+    throw new ProviderError(PROVIDER_ERROR_CODES.network, 'GitHub profile hydration request failed.', { cause })
   }
 
   if (!response.ok) {
@@ -293,7 +293,7 @@ async function hydrateGitHubResult(result, fetchImplementation) {
   try {
     return adaptGitHubUser(await response.json())
   } catch (cause) {
-    throw new ProviderError(PROVIDER_ERROR_CODES.invalidResponse, 'GitHub profile hydration returned invalid JSON.', {cause})
+    throw new ProviderError(PROVIDER_ERROR_CODES.invalidResponse, 'GitHub profile hydration returned invalid JSON.', { cause })
   }
 }
 
@@ -303,7 +303,7 @@ function assertGitHubHydrationComplete(result) {
   }
 }
 
-export async function hydrateGitHubResults(results, {fetchImplementation}) {
+export async function hydrateGitHubResults(results, { fetchImplementation }) {
   const hydratedResults = await Promise.all(results.map((result) => hydrateGitHubResult(result, fetchImplementation)))
 
   hydratedResults.forEach(assertGitHubHydrationComplete)
