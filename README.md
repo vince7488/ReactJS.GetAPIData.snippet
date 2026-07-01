@@ -134,6 +134,24 @@ still apply:
   alphanumeric queries such as `ra1chu` are rejected. Broader levels use the Pokémon catalog, hydrate displayed Pokémon records, and
   level 4 applies the lenient matching rule to Pokémon names and Pokédex numbers.
 
+## Previews
+
+<img width="400" height="225" alt="image" src="https://github.com/user-attachments/assets/64c225f2-f738-499d-833c-274d0e7a9d16" />
+
+<img width="400" height="225" alt="image" src="https://github.com/user-attachments/assets/6041117a-4b68-4cf7-a205-fafdc18bad5f" />
+
+<img width="400" height="225" alt="image" src="https://github.com/user-attachments/assets/d33ee84e-0d34-4b31-b9a4-ee4f357de9aa" />
+
+<img width="400" height="225" alt="image" src="https://github.com/user-attachments/assets/4a317b90-bef7-45b3-be7a-e4bbfedc430e" />
+
+<img width="400" height="225" alt="image" src="https://github.com/user-attachments/assets/ea9ba294-f69b-41fa-8548-7eea6e5a1426" />
+
+<img width="400" height="225" alt="image" src="https://github.com/user-attachments/assets/394aa89f-c1df-4a3e-87ec-0d57de105432" />
+
+<img width="400" height="225" alt="image" src="https://github.com/user-attachments/assets/ba78b55b-8481-4fb4-8eab-fab63e022acf" />
+
+[<img width="280" height="1205" alt="image" src="https://github.com/user-attachments/assets/c410b31b-821e-4f35-a2f5-e7264877cb9d" />](https://github.com/user-attachments/assets/c410b31b-821e-4f35-a2f5-e7264877cb9d)
+
 ## Yours truly
 
 Created by [Vernard Mercader](http://vernard.net)
