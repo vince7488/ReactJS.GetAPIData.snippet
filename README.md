@@ -20,6 +20,8 @@ though.)_
 - Display results as `masonic`-backed virtualized masonry cards with page-scroll progressive reveal instead of a fixed-height result
   scroller.
 
+[<img width="500" alt="image" src="https://github.com/user-attachments/assets/3d4a1d10-e056-471e-a131-1694fd23aaa2" />](https://youtu.be/xQuGRXs0y9c)
+
 ## Requirements
 
 - Node.js 20.19 or newer
