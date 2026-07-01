@@ -150,7 +150,7 @@ still apply:
 
 <img width="400" height="225" alt="image" src="https://github.com/user-attachments/assets/ba78b55b-8481-4fb4-8eab-fab63e022acf" />
 
-[<img width="280" height="1205" alt="image" src="https://github.com/user-attachments/assets/c410b31b-821e-4f35-a2f5-e7264877cb9d" />](https://github.com/user-attachments/assets/c410b31b-821e-4f35-a2f5-e7264877cb9d)
+<img width="280" height="1205" alt="image" src="https://github.com/user-attachments/assets/c410b31b-821e-4f35-a2f5-e7264877cb9d" />
 
 ## Yours truly
 
