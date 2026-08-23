@@ -1,6 +1,10 @@
 # API Search Playground
 
-A provider-driven React application for searching GitHub, Open Library, and PokéAPI through one shared interface.
+A provider-driven React application for searching GitHub, Open Library, and PokéAPI through one shared interface to demonstrate how React handles API.
+
+## Play it here
+
+The game can be found in my [demo area](https://tests.vernard.net/react-api-demo/), `tests.vernard.net/react-api-demo`
 
 The project was originally built with React 16, Webpack 4, Express, Axios, React Bootstrap, and LESS css. I've updated and it now uses
 current React, Vite, Bootstrap, the browser Fetch API, ESLint, Prettier, and Vitest. Provider adapters isolate API request and response
